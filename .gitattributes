@@ -1,0 +1,16 @@
+# Set default behavior to automatically normalize line endings
+* text=auto eol=crlf
+
+# Binary files (don't touch these)
+*.png binary
+*.ico binary
+*.jpg binary
+*.ogg binary
+*.wav binary
+*.mp3 binary
+*.ttf binary
+*.otf binary
+*.dll binary
+*.exe binary
+*.o binary
+*.zip binary

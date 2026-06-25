@@ -1,0 +1,17 @@
+bin/
+obj/
+*.exe
+*.o
+*.lib
+*.dll
+.res
+
+.vscode/
+.clangd
+.ai/
+dump/
+Collision pack/
+SFML-3.0.2/
+
+.DS_Store
+Thumbs.db

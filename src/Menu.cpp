@@ -1,0 +1,344 @@
+#include <iostream>
+#include "Menu.hpp"
+#include "Settings.hpp"
+using namespace sf;
+using namespace std;
+
+Menu::Menu(float winWidth, float winHeight) : m_menuBG({winWidth, winHeight}),
+																							m_gameNameLogo(m_menuFont),
+																							m_playButtonText(m_menuFont),
+																							m_settingsButtonText(m_menuFont),
+																							m_exitButtonText(m_menuFont), m_settingsTitle(m_menuFont),
+																							m_difficultyText(m_menuFont),
+																							m_FPSCounterText(m_menuFont),
+																							m_debugText(m_menuFont),
+																							m_backButtonText(m_menuFont),
+																							m_musicText(m_menuFont),
+																							m_menuMusic(m_menuMusicBuffer)
+{
+	m_playButtonText.setCharacterSize(60);
+	m_playButtonText.setFillColor(Color(255, 220, 0));
+	m_playButtonText.setOutlineColor(Color::Black);
+	m_playButtonText.setOutlineThickness(4.0f);
+	m_playButtonText.setPosition({winWidth / 2.0f, winHeight / 2.0f - 100.0f});
+	m_playButton.setFillColor(Color(0, 255, 0, 100));
+	m_playButton.setOutlineColor(Color::White);
+	m_playButton.setOutlineThickness(5.0f);
+	m_menuMusic.setLooping(true);
+	m_isDifficultyLocked = false;
+	m_menuMusic.setVolume(15.0f);
+}
+
+void Menu::loadAssets()
+{
+	if (!m_menuFont.openFromFile("assets/fonts/Lilita_One.ttf"))
+		cerr << "Menu font error!" << endl;
+	if (!m_menuMusicBuffer.loadFromFile("assets/sound/menu_music.ogg"))
+		cerr << "Menu music error!" << endl;
+}
+
+void Menu::updateMusicVolume(bool isPlaying)
+{
+	if (isPlaying)
+	{
+		m_menuMusic.setVolume(15.0f);
+
+		if (m_menuMusic.getStatus() != Sound::Status::Playing)
+		{
+			m_menuMusic.play();
+		}
+	}
+	else
+		m_menuMusic.setVolume(0);
+}
+
+void Menu::setupMenuButtons(GameState m_gameState, float winWidth, float winHeight, GameSettings &settings, GameState m_lastGameState)
+{
+	if (m_gameState == GameState::Settings)
+	{
+		m_gameNameLogo.setString("SETTINGS:");
+		if (m_lastGameState == GameState::MainMenu)
+			m_menuBG.setFillColor(Color(0, 0, 120, 255));
+		else
+		{
+			m_menuBG.setFillColor(Color(0, 0, 50, 220));
+			m_menuMusic.stop();
+		}
+	}
+	else
+		m_gameNameLogo.setString("FIZZ RUSH !");
+
+	m_gameNameLogo.setCharacterSize(200);
+	m_gameNameLogo.setFillColor(Color(255, 220, 0));
+	m_gameNameLogo.setOutlineColor(Color(150, 100, 0));
+	m_gameNameLogo.setOutlineThickness(4.0f);
+	FloatRect gameNameText = m_gameNameLogo.getLocalBounds();
+	m_gameNameLogo.setOrigin({gameNameText.position.x + gameNameText.size.x / 2.0f, gameNameText.position.y + gameNameText.size.y / 2});
+	m_gameNameLogo.setPosition({winWidth / 2.0f, winHeight / 2.0f - 350.0f});
+
+	if (m_gameState == GameState::Settings)
+	{
+		string diffString = "Difficulty: ";
+		if (settings.gameDifficulty == GameDifficulty::Easy)
+		{
+			diffString += "Easy (^-^)";
+			m_difficultyText.setFillColor(Color(0, 168, 0));
+		}
+		else if (settings.gameDifficulty == GameDifficulty::Normal)
+		{
+			diffString += "Normal (._.)";
+			m_difficultyText.setFillColor(Color(255, 100, 0));
+		}
+		else
+		{
+			diffString += "Hard (0_0)";
+			m_difficultyText.setFillColor(Color(161, 0, 0));
+		}
+
+		m_difficultyText.setString(diffString);
+		m_difficultyText.setCharacterSize(50);
+		m_difficultyText.setOutlineColor(Color::Black);
+		m_difficultyText.setOutlineThickness(3.0f);
+
+		FloatRect diffRect = m_difficultyText.getLocalBounds();
+		m_difficultyText.setOrigin({diffRect.size.x / 2.0f, diffRect.size.y / 2.0f + 10.0f});
+		m_difficultyText.setPosition({winWidth / 2.0f, winHeight / 2.0f - 100.0f});
+
+		m_difficultyButton.setSize({510.0f, 70.0f});
+		m_difficultyButton.setOrigin({m_difficultyButton.getSize().x / 2.0f, m_difficultyButton.getSize().y / 2.0f});
+		m_difficultyButton.setPosition(m_difficultyText.getPosition());
+		m_difficultyButton.setFillColor(Color(0, 100, 255, 150));
+		m_difficultyButton.setOutlineColor(Color::White);
+		m_difficultyButton.setOutlineThickness(5.0f);
+
+		if (m_lastGameState == GameState::Paused)
+		{
+			m_difficultyButton.setFillColor(Color(100, 100, 100, 150));
+			m_difficultyText.setFillColor(Color(150, 150, 150));
+			m_isDifficultyLocked = true;
+		}
+		else
+		{
+			m_difficultyButton.setFillColor(Color(0, 100, 255, 150));
+			m_isDifficultyLocked = false;
+		}
+
+		string musicString = "Music: ";
+		musicString += (settings.playMusic ? "ON" : "OFF");
+
+		m_musicText.setString(musicString);
+		m_musicText.setCharacterSize(50);
+		if (settings.playMusic)
+			m_musicText.setFillColor(Color::Green);
+		else
+			m_musicText.setFillColor(Color::Red);
+
+		m_musicText.setOutlineColor(Color::Black);
+		m_musicText.setOutlineThickness(3.0f);
+
+		FloatRect musicRect = m_musicText.getLocalBounds();
+		m_musicText.setOrigin({musicRect.size.x / 2.0f, musicRect.size.y / 2.0f + 10.0f});
+		m_musicText.setPosition({winWidth / 2.0f, winHeight / 2.0f + 12.5f});
+
+		m_musicButton.setSize({470.0f, 70.0f});
+		m_musicButton.setOrigin({m_musicButton.getSize().x / 2.0f, m_musicButton.getSize().y / 2.0f});
+		m_musicButton.setPosition(m_musicText.getPosition());
+		m_musicButton.setFillColor(Color(0, 100, 255, 150));
+		m_musicButton.setOutlineColor(Color::White);
+		m_musicButton.setOutlineThickness(5.0f);
+
+		string debugString = "Debug Mode: ";
+		debugString += (settings.debugMode ? "ON" : "OFF");
+
+		m_debugText.setString(debugString);
+		m_debugText.setCharacterSize(50);
+		if (settings.debugMode)
+			m_debugText.setFillColor(Color::Green);
+		else
+			m_debugText.setFillColor(Color::Red);
+
+		m_debugText.setOutlineColor(Color::Black);
+		m_debugText.setOutlineThickness(3.0f);
+
+		FloatRect debugRect = m_debugText.getLocalBounds();
+		m_debugText.setOrigin({debugRect.size.x / 2.0f, debugRect.size.y / 2.0f + 10.0f});
+		m_debugText.setPosition({winWidth / 2.0f, winHeight / 2.0f + 129.5f});
+
+		m_debugButton.setSize({470.0f, 70.0f});
+		m_debugButton.setOrigin({m_debugButton.getSize().x / 2.0f, m_debugButton.getSize().y / 2.0f});
+		m_debugButton.setPosition(m_debugText.getPosition());
+		m_debugButton.setFillColor(Color(0, 100, 255, 150));
+		m_debugButton.setOutlineColor(Color::White);
+		m_debugButton.setOutlineThickness(5.0f);
+
+		string fpsString = "SHOW FPS: ";
+		fpsString += (settings.showFps ? "ON" : "OFF");
+
+		m_FPSCounterText.setString(fpsString);
+		m_FPSCounterText.setCharacterSize(50);
+		if (settings.showFps)
+			m_FPSCounterText.setFillColor(Color::Green);
+		else
+			m_FPSCounterText.setFillColor(Color::Red);
+
+		m_FPSCounterText.setOutlineColor(Color::Black);
+		m_FPSCounterText.setOutlineThickness(3.0f);
+
+		FloatRect FPSRect = m_FPSCounterText.getLocalBounds();
+		m_FPSCounterText.setOrigin({FPSRect.size.x / 2.0f, FPSRect.size.y / 2.0f + 10.0f});
+		m_FPSCounterText.setPosition({winWidth / 2.0f, winHeight / 2.0f + 249.0f});
+
+		m_FPSCounterButton.setSize({470.0f, 70.0f});
+		m_FPSCounterButton.setOrigin({m_FPSCounterButton.getSize().x / 2.0f, m_FPSCounterButton.getSize().y / 2.0f});
+		m_FPSCounterButton.setPosition(m_FPSCounterText.getPosition());
+		m_FPSCounterButton.setFillColor(Color(0, 100, 255, 150));
+		m_FPSCounterButton.setOutlineColor(Color::White);
+		m_FPSCounterButton.setOutlineThickness(5.0f);
+
+		m_backButtonText.setString("Back");
+		m_backButtonText.setCharacterSize(50);
+		m_backButtonText.setFillColor(Color::Yellow);
+		m_backButtonText.setOutlineColor(Color::Black);
+		m_backButtonText.setOutlineThickness(3.0f);
+
+		FloatRect backRect = m_backButtonText.getLocalBounds();
+		m_backButtonText.setOrigin({backRect.size.x / 2.0f, backRect.size.y / 2.0f + 10.0f});
+		m_backButtonText.setPosition({winWidth / 2.0f, winHeight / 2.0f + 400.0f});
+
+		m_backButton.setSize({backRect.size.x + 40.0f, backRect.size.y + 20.0f});
+		m_backButton.setOrigin({m_backButton.getSize().x / 2.0f, m_backButton.getSize().y / 2.0f});
+		m_backButton.setPosition(m_backButtonText.getPosition());
+		m_backButton.setFillColor(Color(255, 50, 50, 150));
+		m_backButton.setOutlineColor(Color::White);
+		m_backButton.setOutlineThickness(5.0f);
+	}
+	else
+	{
+		if (m_gameState == GameState::MainMenu)
+		{
+			if (m_menuMusic.getStatus() != Sound::Status::Playing)
+			{
+				m_menuMusic.play();
+			}
+			m_playButtonText.setString("Start the game");
+			m_menuBG.setFillColor(Color(0, 0, 120, 255));
+			m_exitButtonText.setString("Exit the game");
+		}
+		if (m_gameState == GameState::Playing)
+		{
+			m_menuMusic.stop();
+		}
+		if (m_gameState == GameState::Paused)
+		{
+			m_playButtonText.setString("Resume");
+			m_menuBG.setFillColor(Color(0, 0, 120, 180));
+			m_exitButtonText.setString("Exit to menu");
+		}
+
+		FloatRect m_playButtonPos = m_playButtonText.getLocalBounds();
+		m_playButtonText.setOrigin({m_playButtonPos.position.x + m_playButtonPos.size.x / 2.0f, m_playButtonPos.position.y + m_playButtonPos.size.y / 2.0f});
+		m_playButton.setPosition({winWidth / 2.0f, winHeight / 2.0f - 100.0f});
+
+		m_playButton.setSize({m_playButtonPos.size.x + 20.0f, m_playButtonPos.size.y + 20.0f});
+		m_playButton.setOrigin({m_playButton.getSize().x / 2.0f, m_playButton.getSize().y / 2.0f});
+
+		m_settingsButtonText.setString("Settings");
+		m_settingsButtonText.setCharacterSize(60);
+		m_settingsButtonText.setFillColor(Color(255, 220, 0));
+		m_settingsButtonText.setOutlineColor(Color::Black);
+		m_settingsButtonText.setOutlineThickness(4.0f);
+		FloatRect m_menuSettingsPos = m_settingsButtonText.getLocalBounds();
+		m_settingsButtonText.setOrigin({m_menuSettingsPos.position.x + m_menuSettingsPos.size.x / 2.0f, m_menuSettingsPos.position.y + m_menuSettingsPos.size.y / 2.0f});
+		m_settingsButtonText.setPosition({winWidth / 2.0f, winHeight / 2.0f + 75.0f});
+		m_settingsButton.setSize({m_menuSettingsPos.size.x + 20.0f, m_menuSettingsPos.size.y + 20.0f});
+		m_settingsButton.setFillColor(Color(0, 255, 0, 100));
+		m_settingsButton.setOutlineColor(Color::White);
+		m_settingsButton.setOutlineThickness(5.0f);
+		m_settingsButton.setOrigin({m_settingsButton.getSize().x / 2.0f, m_settingsButton.getSize().y / 2.0f});
+		m_settingsButton.setPosition({winWidth / 2.0f, winHeight / 2.0f + 75.0f});
+
+		m_exitButtonText.setCharacterSize(60);
+		m_exitButtonText.setFillColor(Color(255, 220, 0));
+		m_exitButtonText.setOutlineColor(Color::Black);
+		m_exitButtonText.setOutlineThickness(4.0f);
+		FloatRect m_menuExitText = m_exitButtonText.getLocalBounds();
+		m_exitButtonText.setOrigin({m_menuExitText.position.x + m_menuExitText.size.x / 2.0f,
+																m_menuExitText.position.y + m_menuExitText.size.y / 2.0f});
+		m_exitButtonText.setPosition({winWidth / 2.0f, winHeight / 2.0f + 250.0f});
+		m_exitButton.setSize({m_menuExitText.size.x + 20.0f, m_menuExitText.size.y + 20.0f});
+		m_exitButton.setFillColor(Color(0, 255, 0, 100));
+		m_exitButton.setOutlineColor(Color::White);
+		m_exitButton.setOutlineThickness(5.0f);
+		m_exitButton.setOrigin({m_exitButton.getSize().x / 2.0f, m_exitButton.getSize().y / 2.0f});
+		m_exitButton.setPosition({winWidth / 2.0f, winHeight / 2.0f + 250.0f});
+	}
+}
+
+int Menu::mouseClickPos(int mouseX, int mouseY, GameState m_gameState)
+{
+	if (m_gameState == GameState::MainMenu || m_gameState == GameState::Paused)
+	{
+		if (m_playButton.getGlobalBounds().contains({static_cast<float>(mouseX), static_cast<float>(mouseY)}))
+			return 1;
+		else if (m_settingsButton.getGlobalBounds().contains({static_cast<float>(mouseX), static_cast<float>(mouseY)}))
+			return 2;
+		else if (m_exitButton.getGlobalBounds().contains({static_cast<float>(mouseX), static_cast<float>(mouseY)}))
+			return 8;
+		else
+			return 0;
+	}
+	else
+	{
+		if (m_difficultyButton.getGlobalBounds().contains({static_cast<float>(mouseX), static_cast<float>(mouseY)}))
+		{
+			if (m_isDifficultyLocked)
+				return 0;
+			else
+				return 3;
+		}
+		else if (m_musicButton.getGlobalBounds().contains({static_cast<float>(mouseX), static_cast<float>(mouseY)}))
+			return 4;
+		else if (m_FPSCounterButton.getGlobalBounds().contains({static_cast<float>(mouseX), static_cast<float>(mouseY)}))
+			return 5;
+		else if (m_debugButton.getGlobalBounds().contains({static_cast<float>(mouseX), static_cast<float>(mouseY)}))
+			return 6;
+		else if (m_backButton.getGlobalBounds().contains({static_cast<float>(mouseX), static_cast<float>(mouseY)}))
+			return 7;
+		else
+			return 0;
+	}
+}
+
+void Menu::draw(RenderWindow &window, GameState m_gameState)
+{
+	window.draw(m_menuBG);
+	window.draw(m_gameNameLogo);
+	if (m_gameState == GameState::Settings)
+	{
+		window.draw(m_difficultyButton);
+		window.draw(m_difficultyText);
+
+		window.draw(m_musicButton);
+		window.draw(m_musicText);
+
+		window.draw(m_FPSCounterButton);
+		window.draw(m_FPSCounterText);
+
+		window.draw(m_debugButton);
+		window.draw(m_debugText);
+
+		window.draw(m_backButton);
+		window.draw(m_backButtonText);
+	}
+	else
+	{
+		window.draw(m_playButton);
+		window.draw(m_playButtonText);
+
+		window.draw(m_settingsButton);
+		window.draw(m_settingsButtonText);
+
+		window.draw(m_exitButton);
+		window.draw(m_exitButtonText);
+	}
+}
