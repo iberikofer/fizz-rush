@@ -316,7 +316,6 @@ vector<CollisionCircle> Player::getHitboxes() {
   FloatRect localBounds = m_player.getLocalBounds();
 
   float realWidth = localBounds.size.x * m_player.getScale().x;
-  float realHeight = localBounds.size.y * m_player.getScale().y;
 
   float easyRadius = (realWidth / 2.0f) * 0.75f;
   float normalRadius = (realWidth / 2.0f) * 0.85f;

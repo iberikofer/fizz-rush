@@ -159,7 +159,7 @@ void Game::run()
 						m_gameSettings.playMusic = !m_gameSettings.playMusic;
 						if (m_gameSettings.playMusic)
 						{
-							if (m_currentGameState == GameState::MainMenu || m_currentGameState == GameState::Settings && m_lastGameState == GameState::MainMenu)
+							if (m_currentGameState == GameState::MainMenu || (m_currentGameState == GameState::Settings && m_lastGameState == GameState::MainMenu))
 							{
 								m_menu.updateMusicVolume(true);
 								m_gameMusic.setVolume(0);
@@ -213,6 +213,7 @@ void Game::run()
 			else if (const auto *keyPressed = event->getIf<Event::KeyPressed>())
 			{
 				if (keyPressed->code == Keyboard::Key::Escape)
+				{
 					if (m_currentGameState == GameState::Playing)
 					{
 						m_currentGameState = GameState::Paused;
@@ -234,6 +235,7 @@ void Game::run()
 						m_currentGameState = m_lastGameState;
 						m_menu.setupMenuButtons(m_currentGameState, currentW, currentH, m_gameSettings, m_lastGameState);
 					}
+				}
 
 				if (m_currentGameState == GameState::MainMenu && keyPressed->code == Keyboard::Key::Enter)
 				{
@@ -340,6 +342,11 @@ void Game::run()
 		}
 
 		case GameState::Paused:
+		{
+			break;
+		}
+		case GameState::Settings:
+		case GameState::GameOver:
 		{
 			break;
 		}
