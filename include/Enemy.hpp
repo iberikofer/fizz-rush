@@ -1,5 +1,6 @@
 #pragma once
 #include <SFML/Graphics.hpp>
+#include <vector>
 #include "Settings.hpp"
 
 class Enemy
@@ -11,7 +12,7 @@ public:
 	void setDifficultyParams(float enemySpeed, float enemyScale);
 	void reset(float m_startPosX, float m_sstartPosY, float m_difficultyEnemySpeed);
 	void draw(sf::RenderWindow &window, const GameSettings &gameSettings);
-	sf::FloatRect getHitbox();
+	std::vector<CollisionCircle> getHitboxes();
 
 private:
 	sf::Texture m_enemyTexture;

@@ -1,13 +1,14 @@
 #include <iostream>
 #include <ctime>
+#include <cmath>
 #include "Game.hpp"
 using namespace std;
 using namespace sf;
 
 Game::Game() : m_loadingText(m_loadingFont),
-	m_player(static_cast<float>(VideoMode::getDesktopMode().size.x), static_cast<float>(VideoMode::getDesktopMode().size.y)),
-	m_enemy(0.0f, -300.0f),
-	m_bgSprite(m_bgTexture),
+							 m_player(static_cast<float>(VideoMode::getDesktopMode().size.x), static_cast<float>(VideoMode::getDesktopMode().size.y)),
+							 m_enemy(0.0f, -300.0f),
+							 m_bgSprite(m_bgTexture),
 							 m_menu(static_cast<float>(VideoMode::getDesktopMode().size.x), static_cast<float>(VideoMode::getDesktopMode().size.y)),
 							 m_fpsText(m_fpsFont),
 							 m_fpsErrorRect({100.f, 100.f}),
@@ -49,6 +50,7 @@ Game::Game() : m_loadingText(m_loadingFont),
 	if (!m_gameMusicSoundBuffer.loadFromFile("assets/sound/game_music.ogg"))
 		cerr << "Game music error!" << endl;
 	m_gameMusic.setLooping(true);
+	m_menuButtonSound.setVolume(50.0f);
 	m_bgSprite.setTexture(m_bgTexture, true);
 	float m_bgScaleX = m_gameWindow.getSize().x / static_cast<float>(m_bgTexture.getSize().x);
 	float m_bgScaleY = m_gameWindow.getSize().y / static_cast<float>(m_bgTexture.getSize().y);
@@ -121,7 +123,8 @@ void Game::run()
 						if (m_currentGameState == GameState::MainMenu)
 						{
 							startNewGame();
-							m_gameMusic.play();
+							if (m_player.hasPlayerMoved())
+								m_gameMusic.play();
 						}
 						m_currentGameState = GameState::Playing;
 						if (m_gameSettings.playMusic)
@@ -210,7 +213,6 @@ void Game::run()
 			else if (const auto *keyPressed = event->getIf<Event::KeyPressed>())
 			{
 				if (keyPressed->code == Keyboard::Key::Escape)
-				{
 					if (m_currentGameState == GameState::Playing)
 					{
 						m_currentGameState = GameState::Paused;
@@ -232,7 +234,6 @@ void Game::run()
 						m_currentGameState = m_lastGameState;
 						m_menu.setupMenuButtons(m_currentGameState, currentW, currentH, m_gameSettings, m_lastGameState);
 					}
-				}
 
 				if (m_currentGameState == GameState::MainMenu && keyPressed->code == Keyboard::Key::Enter)
 				{
@@ -285,30 +286,60 @@ void Game::run()
 		case GameState::Playing:
 		{
 			m_player.update(dt, currentW, currentH, m_machineLeftWall, m_machineRightWall);
+			if (m_player.hasPlayerMoved() &&
+					m_gameMusic.getStatus() != Sound::Status::Playing &&
+					m_gameSettings.playMusic)
+			{
+				m_gameMusic.setVolume(15.0f);
+				m_gameMusic.play();
+			}
 			if (m_player.hasPlayerMoved())
 			{
 				m_enemy.update(dt, currentW, currentH, m_machineLeftWall, m_machineRightWall);
 			}
 
-			if (m_player.getHitbox().findIntersection(m_enemy.getHitbox()))
+			// 1. Отримуємо наші нові списки кіл
+			auto playerCircles = m_player.getHitboxes();
+			auto enemyCircles = m_enemy.getHitboxes();
+
+			bool isHit = false;
+
+			for (auto &pCircle : playerCircles)
+			{
+				for (auto &eCircle : enemyCircles)
+				{
+					// Математика Піфагора: a^2 + b^2 = c^2
+					float dx = pCircle.center.x - eCircle.center.x;
+					float dy = pCircle.center.y - eCircle.center.y;
+
+					// Рахуємо відстань (гіпотенузу)
+					float distance = sqrt(dx * dx + dy * dy);
+
+					// Якщо відстань менша за суму радіусів — це ДТП!
+					if (distance < (pCircle.radius + eCircle.radius))
+					{
+						isHit = true;
+						break; // Виходимо з внутрішнього циклу
+					}
+				}
+				if (isHit)
+					break; // Виходимо з зовнішнього циклу
+			}
+
+			if (isHit)
 			{
 				m_player.loseHealth(dt);
+				// ... тут твоя логіка смерті ...
 			}
+
 			break;
 		}
 
 		case GameState::MainMenu:
 		{
-			break;
 		}
 
 		case GameState::Paused:
-		{
-			break;
-		}
-		
-		case GameState::Settings:
-		case GameState::GameOver:
 		{
 			break;
 		}
@@ -372,7 +403,7 @@ void Game::startNewGame()
 	}
 	}
 
-	m_player.resetGame(m_startPosX, m_startPosY, difficultyHP, difficultyPlayerSpeed, difficultyInvincibility);
+	m_player.resetGame(m_startPosX, m_startPosY, difficultyHP, difficultyPlayerSpeed, difficultyInvincibility, m_gameSettings.gameDifficulty);
 
 	m_enemy.reset(m_startPosX - 40.0f, -300.0f, difficultyEnemySpeed);
 

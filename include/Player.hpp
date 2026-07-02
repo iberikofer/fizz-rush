@@ -1,6 +1,7 @@
 #pragma once
 #include <SFML/Graphics.hpp>
 #include <SFML/Audio.hpp>
+#include <vector>
 #include "Settings.hpp"
 
 class Player
@@ -12,11 +13,11 @@ public:
 	void updateSound();
 	void setDifficultyParams(int maxHP, float playerSpeed, float invincibilityDur);
 	void checkWorldCollision(float winWidth, float winHeight);
-	sf::FloatRect getHitbox();
+	std::vector<CollisionCircle> getHitboxes();
 	bool hasPlayerMoved();
 	int getHealth();
 	int loseHealth(sf::Time dt);
-	void resetGame(float m_startPosX, float m_startPosY, int maxHP, float difficultySpeed, float invincibilityDuration);
+	void resetGame(float m_startPosX, float m_startPosY, int maxHP, float difficultySpeed, float invincibilityDuration, GameDifficulty difficulty);
 	void draw(sf::RenderWindow &window, const GameSettings &gameSettings);
 
 private:
@@ -39,6 +40,7 @@ private:
 	float m_machineLeftWall;
 	float m_machineUpWall;
 	float m_machineRightWall;
+	GameDifficulty m_difficulty;
 
 	//* === SOUND ===
 	sf::SoundBuffer m_wallSoundBuffer;

@@ -1,4 +1,11 @@
 #pragma once
+#include <SFML/Graphics.hpp>
+
+struct CollisionCircle
+{
+	sf::Vector2f center;
+	float radius;
+};
 
 enum class GameState
 {
@@ -15,6 +22,7 @@ enum class WindowMode
 	WindowedFull,
 	Fullscreen
 };
+
 enum class GameDifficulty
 {
 	Easy,
@@ -26,7 +34,7 @@ struct GameSettings
 {
 	GameDifficulty gameDifficulty = GameDifficulty::Easy;
 	WindowMode windowMode = WindowMode::Fullscreen;
- 	bool playMusic = true;
+	bool playMusic = true;
 	bool debugMode = false;
 	bool showFps = false;
 };

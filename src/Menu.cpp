@@ -26,7 +26,7 @@ Menu::Menu(float winWidth, float winHeight) : m_menuBG({winWidth, winHeight}),
 	m_playButton.setOutlineThickness(5.0f);
 	m_menuMusic.setLooping(true);
 	m_isDifficultyLocked = false;
-	m_menuMusic.setVolume(15.0f);
+	m_menuMusic.setVolume(40.0f);
 }
 
 void Menu::loadAssets()
@@ -41,7 +41,7 @@ void Menu::updateMusicVolume(bool isPlaying)
 {
 	if (isPlaying)
 	{
-		m_menuMusic.setVolume(15.0f);
+		m_menuMusic.setVolume(40.0f);
 
 		if (m_menuMusic.getStatus() != Sound::Status::Playing)
 		{
@@ -287,7 +287,7 @@ int Menu::mouseClickPos(int mouseX, int mouseY, GameState m_gameState)
 		else
 			return 0;
 	}
-	else
+	else if (m_gameState == GameState::Settings)
 	{
 		if (m_difficultyButton.getGlobalBounds().contains({static_cast<float>(mouseX), static_cast<float>(mouseY)}))
 		{
@@ -307,6 +307,7 @@ int Menu::mouseClickPos(int mouseX, int mouseY, GameState m_gameState)
 		else
 			return 0;
 	}
+	return 0;
 }
 
 void Menu::draw(RenderWindow &window, GameState m_gameState)
