@@ -34,7 +34,7 @@ struct GameSettings
 {
 	GameDifficulty gameDifficulty = GameDifficulty::Easy;
 	WindowMode windowMode = WindowMode::Fullscreen;
-	bool playMusic = true;
-	bool debugMode = false;
-	bool showFps = false;
+	bool playMusic = false;
+	bool debugMode = true;
+	bool showFps = true;
 };

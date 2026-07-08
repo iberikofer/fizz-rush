@@ -4,6 +4,13 @@
 #include "Player.hpp"
 #include "Enemy.hpp"
 
+enum class GameEpisode
+{
+	VendingMachine,
+	Survival,
+	BossFight
+};
+
 class Game
 {
 public:
@@ -14,11 +21,12 @@ private:
 	//* SETTINGS
 	std::string m_gameWindowName = "Fizz Rush!";
 	sf::RenderWindow m_gameWindow;
+	sf::Vector2u m_currentWindowSize;
 	sf::Image m_gameWindowIcon;
 	GameSettings m_gameSettings;
 	GameState m_currentGameState;
 	GameState m_lastGameState;
-	int currentEpisode = 1;
+	GameEpisode m_currentEpisode;
 	void startNewGame();
 
 	//* SYSTEM OBJECTS
@@ -29,24 +37,31 @@ private:
 	float m_startPosX;
 	float m_startPosY;
 	sf::Clock m_gameClock;
-	bool m_isFullscreen = false;
 	sf::Font m_fpsFont;
 	sf::Text m_fpsText;
 	sf::RectangleShape m_fpsErrorRect;
 	float m_fpsUpdateTimer = 0.0f;
 	float m_fpsMargin = 135.0f;
 	bool m_fpsFontIsLoaded = false;
-	sf::Vector2u m_currentWindowSize;
+	bool m_isFullscreen = false;
 	int m_menuClickType;
 	float m_machineLeftWall;
 	float m_machineRightWall;
 	sf::SoundBuffer m_menuButtonSoundBuffer;
 	sf::Sound m_menuButtonSound;
-	sf::SoundBuffer m_gameMusicSoundBuffer;
+	sf::SoundBuffer m_gameMusicBuffer;
 	sf::Sound m_gameMusic;
+	sf::SoundBuffer m_deathSoundBuffer;
+	sf::Sound m_deathSound;
+	float m_spawnTimer;
 
 	//* === GAME OBJETS ===
 	Menu m_menu;
 	Player m_player;
-	Enemy m_enemy;
+	sf::Texture m_enemyBarTexture;
+	sf::Sprite m_enemyBar;
+	sf::Texture m_enemyBar2Texture;
+	sf::Sprite m_enemyBar2;
+	std::vector<sf::Texture> m_enemyCanTextures;
+	std::vector<Enemy> m_enemies;
 };

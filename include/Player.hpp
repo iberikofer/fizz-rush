@@ -13,7 +13,7 @@ public:
 	void updateSound();
 	void setDifficultyParams(int maxHP, float playerSpeed, float invincibilityDur);
 	void checkWorldCollision(float winWidth, float winHeight);
-	std::vector<CollisionCircle> getHitboxes();
+	const std::vector<CollisionCircle>& getHitboxes();
 	bool hasPlayerMoved();
 	int getHealth();
 	int loseHealth(sf::Time dt);
@@ -29,6 +29,10 @@ private:
 	sf::Sprite m_player;
 	sf::Sprite m_playerAura;
 	sf::Sprite m_arrow;
+	sf::Texture m_fullHeartTexture;
+	sf::Texture m_emptyHeartTexture;
+	sf::Texture m_emptyHeartTexture2;
+	sf::Sprite m_HealthSprite;
 	float m_waveTotalTime;
 
 	//* === PHYSICS ===
@@ -40,6 +44,7 @@ private:
 	float m_machineLeftWall;
 	float m_machineUpWall;
 	float m_machineRightWall;
+	std::vector<CollisionCircle> m_hitboxes;
 	GameDifficulty m_difficulty;
 
 	//* === SOUND ===
@@ -54,6 +59,7 @@ private:
 
 	//* === GAMING PROCESS ===
 	int m_HP;
+	int m_maxHP;
 	bool m_showAura;
 	bool m_isInvincible;
 	float m_invincibilityTimer;
