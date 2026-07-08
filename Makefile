@@ -1,5 +1,6 @@
 CXX = g++
 WINDRES = windres
+.SILENT:
 
 # Flags for compilation (C++17 standard, SFML include path)
 CXXFLAGS = -std=c++17 -Wall -I"SFML-3.0.2/include" -I"include"
