@@ -9,20 +9,24 @@ class Player
 public:
 	Player(float winWidth, float winHeight);
 	void loadAssets(float startPosX, float startPosY);
-	void update(sf::Time dt, float winWidth, float winHeight, float m_machineLeftWall, float m_machineRightWall);
+	void update(sf::Time dt, float winWidth, float winHeight, float m_machineLeftWall, float m_machineRightWall, float m_machineTopWall, float m_WallPushBack, bool playWallSound, int currentEpisode);
 	void updateSound();
-	void setDifficultyParams(int maxHP, float playerSpeed, float invincibilityDur);
-	void checkWorldCollision(float winWidth, float winHeight);
-	const std::vector<CollisionCircle>& getHitboxes();
+	void checkWorldCollision(float winWidth, float winHeight, float leftWall, float rightWall, float topWall, float m_WallPushBack, bool playWallSound);
+	const std::vector<CollisionCircle> &getHitboxes();
+	sf::FloatRect getHeartHitboxRect();
 	bool hasPlayerMoved();
 	int getHealth();
+	void gainHealth(int amount);
 	int loseHealth(sf::Time dt);
 	void resetGame(float m_startPosX, float m_startPosY, int maxHP, float difficultySpeed, float invincibilityDuration, GameDifficulty difficulty);
+	sf::Vector2f getPosition();
+	void startNextEpisode(float startX, float startY);
 	void draw(sf::RenderWindow &window, const GameSettings &gameSettings);
 
 private:
 	//* === GRAPHICS ===
 	sf::Texture m_playerTexture;
+	sf::Texture m_playerRolledTexture;
 	sf::Texture m_playerAuraTexture1;
 	sf::Texture m_playerAuraTexture2;
 	sf::Texture m_arrowTexture;
@@ -34,6 +38,8 @@ private:
 	sf::Texture m_emptyHeartTexture2;
 	sf::Sprite m_HealthSprite;
 	float m_waveTotalTime;
+	float m_rollAnimTimer;
+	bool m_isRollTexture;
 
 	//* === PHYSICS ===
 	float m_playerWidth;
@@ -46,6 +52,9 @@ private:
 	float m_machineRightWall;
 	std::vector<CollisionCircle> m_hitboxes;
 	GameDifficulty m_difficulty;
+	sf::Vector2f m_velocity;
+	float m_acceleration;
+	float m_friction;
 
 	//* === SOUND ===
 	sf::SoundBuffer m_wallSoundBuffer;
