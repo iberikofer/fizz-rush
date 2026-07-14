@@ -3,8 +3,6 @@
 #include <cmath>
 #include <algorithm>
 #include "Game.hpp"
-using namespace std;
-using namespace sf;
 
 	//* === INITIAL SETUP ===
 Game::Game() : m_loadingText(m_loadingFont),
@@ -26,57 +24,105 @@ Game::Game() : m_loadingText(m_loadingFont),
 							 m_winSound(m_winSoundBuffer),
 							 m_deathSound(m_deathSoundBuffer),
 							 m_healSound(m_healSoundBuffer),
-							 m_menu(static_cast<float>(VideoMode::getDesktopMode().size.x), static_cast<float>(VideoMode::getDesktopMode().size.y)),
-							 m_player(static_cast<float>(VideoMode::getDesktopMode().size.x), static_cast<float>(VideoMode::getDesktopMode().size.y))
+							 m_menu(static_cast<float>(sf::VideoMode::getDesktopMode().size.x), static_cast<float>(sf::VideoMode::getDesktopMode().size.y)),
+							 m_player(static_cast<float>(sf::VideoMode::getDesktopMode().size.x), static_cast<float>(sf::VideoMode::getDesktopMode().size.y))
 {
-	m_gameWindow.create(VideoMode::getDesktopMode(), "Fizz Rush!", Style::None, State::Fullscreen);
-	m_gameWindow.clear(Color::Black);
+	m_gameWindow.create(sf::VideoMode::getDesktopMode(), "Fizz Rush!", sf::Style::None, sf::State::Fullscreen);
+	m_gameWindow.requestFocus();
+	m_gameWindow.clear(sf::Color::Black);
 	m_gameWindow.display();
-
-	while (m_gameWindow.pollEvent())
+	if (m_gameSettings.VSync)
 	{
-		// DECOY CYCLE, TO PREVENT WHITE SCREEN FLASH ON THE START
+		m_gameWindow.setVerticalSyncEnabled(true);
+		m_gameWindow.setFramerateLimit(0);
+	}
+	else
+	{
+		m_gameWindow.setVerticalSyncEnabled(false);
+		m_gameWindow.setFramerateLimit(120);
 	}
 
 	//! CONFIG
 	if (!m_loadingFont.openFromFile("assets/fonts/Lilita_One.ttf"))
-		cerr << "Menu font error!" << endl;
+		std::cerr << "Menu font error!" << std::endl;
 	m_loadingText.setString("LOADING...=)");
-	m_loadingText.setCharacterSize(120);
-	m_loadingText.setFillColor(Color::White);
-	FloatRect m_loadingTextPos = m_loadingText.getLocalBounds();
+	m_loadingText.setCharacterSize(175);
+	m_loadingText.setFillColor(sf::Color::White);
+	sf::FloatRect m_loadingTextPos = m_loadingText.getLocalBounds();
 	m_loadingText.setOrigin({m_loadingTextPos.position.x + m_loadingTextPos.size.x / 2.0f,
 													 m_loadingTextPos.position.y + m_loadingTextPos.size.y / 2.0f});
 	m_loadingText.setPosition({m_gameWindow.getSize().x / 2.0f, m_gameWindow.getSize().y / 2.0f});
-	m_gameWindow.clear(Color::Black);
+				//* === DRAW LOGIC ===
+			m_gameWindow.clear(sf::Color::Black);
 	m_gameWindow.draw(m_loadingText);
 	m_gameWindow.display();
-	srand(time(0));
+	std::srand(std::time(0));
 
 	//! SYSTEM OBJECTS
 	if (m_gameWindowIcon.loadFromFile("assets/images/app_icon.png"))
 		m_gameWindow.setIcon(m_gameWindowIcon);
 	else
-		cerr << "Window icon error!" << endl;
+		std::cerr << "Window icon error!" << std::endl;
 	if (!m_bgTexture.loadFromFile("assets/images/Episode_1.jpg"))
-		cerr << "Background error!" << endl;
+		std::cerr << "Background error!" << std::endl;
 	if (!m_Episode1MusicBuffer.loadFromFile("assets/sound/Episode_1.ogg"))
-		cerr << "Game music 1 error!" << endl;
+		std::cerr << "Game music 1 error!" << std::endl;
 	if (!m_Episode2MusicBuffer.loadFromFile("assets/sound/Episode_2.ogg"))
-		cerr << "Game music 2 error!" << endl;
+		std::cerr << "Game music 2 error!" << std::endl;
 	if (!m_Episode3MusicBuffer.loadFromFile("assets/sound/boss_music.ogg"))
-		cerr << "Boss music error!" << endl;
+		std::cerr << "Boss music error!" << std::endl;
 	if (!m_transitionSoundBuffer.loadFromFile("assets/sound/Episode_transition.ogg"))
-		cerr << "Transition sound error!" << endl;
+		std::cerr << "Transition sound error!" << std::endl;
 	if (!m_heartPickupTexture.loadFromFile("assets/images/heart_heal.png"))
-		cerr << "Heart pickup texture error!" << endl;
+		std::cerr << "Heart pickup texture error!" << std::endl;
+	if (!m_enemyBarTexture.loadFromFile("assets/images/enemy_bar1.png"))
+		std::cerr << "Bar texture error!" << std::endl;
+	if (!m_enemyBar2Texture.loadFromFile("assets/images/enemy_bar2.png"))
+		std::cerr << "Bar2 texture error!" << std::endl;
+	sf::Texture tempTexture;
+	if (tempTexture.loadFromFile("assets/images/enemy_can1.png"))
+		m_enemyCanTextures.push_back(tempTexture);
+	else
+		std::cerr << "Enemy 1 texture error!" << std::endl;
+	if (tempTexture.loadFromFile("assets/images/enemy_can2.png"))
+		m_enemyCanTextures.push_back(tempTexture);
+	else
+		std::cerr << "Enemy 2 texture error!" << std::endl;
+	if (tempTexture.loadFromFile("assets/images/enemy_can3.png"))
+		m_enemyCanTextures.push_back(tempTexture);
+	else
+		std::cerr << "Enemy 3 texture error!" << std::endl;
+	if (tempTexture.loadFromFile("assets/images/enemy_can4.png"))
+		m_enemyCanTextures.push_back(tempTexture);
+	else
+		std::cerr << "Enemy 4 texture error!" << std::endl;
+	if (tempTexture.loadFromFile("assets/images/enemy_can5.png"))
+		m_enemyCanTextures.push_back(tempTexture);
+	else
+		std::cerr << "Enemy 5 texture error!" << std::endl;
+	if (!m_enemyBoxTexture.loadFromFile("assets/images/enemy_box1.png"))
+		std::cerr << "Box tex error\n";
+	if (!m_enemyCookieTexture.loadFromFile("assets/images/enemy_box1_particle.png"))
+		std::cerr << "Cookie tex error\n";
+	if (!m_enemyCookieBuffer.loadFromFile("assets/sound/box_particle.ogg"))
+		std::cerr << "Cookie sf::Sound error!" << std::endl;
+	else
+		m_cookieSound.setBuffer(m_enemyCookieBuffer);
+	if (m_enemyHand1Texture.loadFromFile("assets/images/enemy_hand1.png"))
+		m_enemyHand1.setTexture(m_enemyHand1Texture, true);
+	else
+		std::cerr << "Enemy Hand texture error!" << std::endl;
+	if (m_enemyHand2Texture.loadFromFile("assets/images/enemy_hand2.png"))
+		m_enemyHand2.setTexture(m_enemyHand2Texture, true);
+	else
+		std::cerr << "Enemy Hand 2 texture error!" << std::endl;
 	m_heartSpawnTimer = 0.0f;
-	m_gameWindow.setVerticalSyncEnabled(true);
 	m_Episode1Music.setLooping(true);
 	m_Episode2Music.setLooping(true);
 	m_Episode3Music.setLooping(true);
 	m_menuButtonSound.setVolume(50.0f);
 	m_cookieSound.setVolume(20.0f);
+	m_healSound.setVolume(50.0f);
 	m_bgSprite.setTexture(m_bgTexture, true);
 	float m_bgScaleX = m_gameWindow.getSize().x / static_cast<float>(m_bgTexture.getSize().x);
 	float m_bgScaleY = m_gameWindow.getSize().y / static_cast<float>(m_bgTexture.getSize().y);
@@ -86,8 +132,8 @@ Game::Game() : m_loadingText(m_loadingFont),
 	m_currentWindowSize = m_gameWindow.getSize();
 	m_currentGameState = GameState::MainMenu;
 	m_fpsText.setCharacterSize(40);
-	m_fpsText.setFillColor(Color(255, 220, 0));
-	m_fpsText.setOutlineColor(Color(150, 100, 0));
+	m_fpsText.setFillColor(sf::Color(255, 220, 0));
+	m_fpsText.setOutlineColor(sf::Color(150, 100, 0));
 	m_fpsText.setOutlineThickness(4.0f);
 	if (m_fpsFont.openFromFile("assets/fonts/Nabla.ttf"))
 	{
@@ -97,29 +143,29 @@ Game::Game() : m_loadingText(m_loadingFont),
 	}
 	else
 	{
-		cerr << "Font error!" << endl;
+		std::cerr << "sf::Font error!" << std::endl;
 		m_fpsFontIsLoaded = false;
 	}
-	m_fpsErrorRect.setFillColor(Color::Red);
+	m_fpsErrorRect.setFillColor(sf::Color::Red);
 	m_fpsErrorRect.setPosition({m_currentWindowSize.x - m_fpsMargin, 50.0f});
 	m_player.loadAssets(m_startPosX, m_startPosY);
 	m_boss.loadAssets();
 	m_machineLeftWall = 68.5f;
 	m_machineRightWall = 135.0f;
-	m_machineTopWall = 16.0f;
-	m_menu.loadAssets();
+	m_machineUpWall = 16.0f;
+	m_menu.loadAssets(m_currentWindowSize.x, m_currentWindowSize.y);
 	m_menu.setupMenuButtons(m_currentGameState, m_currentWindowSize.x, m_currentWindowSize.y, m_gameSettings, m_lastGameState);
 	if (!m_menuButtonSoundBuffer.loadFromFile("assets/sound/button.ogg"))
-		cerr << "Menu sound error!" << endl;
+		std::cerr << "Menu sound error!" << std::endl;
 	if (!m_winSoundBuffer.loadFromFile("assets/sound/victory.ogg"))
-		cerr << "Victory sound error!" << endl;
+		std::cerr << "Victory sound error!" << std::endl;
 	else
 		m_winSound.setBuffer(m_winSoundBuffer);
 	if (!m_deathSoundBuffer.loadFromFile("assets/sound/death.ogg"))
-		cerr << "Death sound error!" << endl;
+		std::cerr << "Death sound error!" << std::endl;
 	m_deathSound.setVolume(50.0f);
 	if (!m_healSoundBuffer.loadFromFile("assets/sound/heal.ogg"))
-		cerr << "Death sound error!" << endl;
+		std::cerr << "Death sound error!" << std::endl;
 	m_healSound.setVolume(75.0f);
 	m_gameClock.restart();
 	setupEpisode(GameEpisode::VendingMachine);
@@ -135,34 +181,34 @@ Game::Game() : m_loadingText(m_loadingFont),
 	m_gameClock.restart();
 }
 
+	//* === GAME LOOP ===
 void Game::run()
 {
-	//* === GAME LOOP ===
 	while (m_gameWindow.isOpen())
 	{
 		float currentW = static_cast<float>(m_currentWindowSize.x);
 		float currentH = static_cast<float>(m_currentWindowSize.y);
-		Time dt = m_gameClock.restart();
+		sf::Time dt = m_gameClock.restart();
 		m_fpsUpdateTimer += dt.asSeconds();
-		float FPS = 1.0f / dt.asSeconds();
+		float FPS = (dt.asSeconds() > 0) ? 1.0f / dt.asSeconds() : 0.0f;
 		if (m_fpsUpdateTimer >= 0.3f)
 		{
 			if (m_fpsFontIsLoaded)
 			{
-				m_fpsText.setString("FPS: " + to_string(int(FPS)));
+				m_fpsText.setString("FPS: " + std::to_string(int(FPS)));
 			}
 			m_fpsUpdateTimer = 0.0f;
 		}
 
-		while (const optional event = m_gameWindow.pollEvent())
+		while (const std::optional event = m_gameWindow.pollEvent())
 		{
-			if (event->is<Event::Closed>())
+			if (event->is<sf::Event::Closed>())
 			{
 				m_gameWindow.close();
 			}
-			else if (const auto *mouseClick = event->getIf<Event::MouseButtonPressed>())
+			else if (const auto *mouseClick = event->getIf<sf::Event::MouseButtonPressed>())
 			{
-				if (mouseClick->button == Mouse::Button::Left)
+				if (mouseClick->button == sf::Mouse::Button::Left)
 				{
 					int m_menuClickType = m_menu.mouseClickPos(mouseClick->position.x, mouseClick->position.y, m_currentGameState);
 
@@ -173,10 +219,12 @@ void Game::run()
 						if (m_currentGameState == GameState::MainMenu)
 						{
 							if (!m_isFadingIn && !m_isFadingOut)
-								startFadeOut(GameEpisode::BossFight);
+								startFadeOut(GameEpisode::VendingMachine);
 						}
 						else if (m_currentGameState == GameState::GameOver)
+						{
 							startNewGame(false);
+						}
 						else if (m_currentGameState == GameState::Paused)
 						{
 							m_currentGameState = GameState::Playing;
@@ -186,7 +234,7 @@ void Game::run()
 						{
 							m_Episode1Music.setVolume(30.0f);
 							m_Episode2Music.setVolume(30.0f);
-							m_Episode3Music.setVolume(30.0f);
+							m_Episode3Music.setVolume(45.0f);
 						}
 						else
 						{
@@ -243,23 +291,40 @@ void Game::run()
 					}
 					else if (m_menuClickType == 5)
 					{
-						m_menuButtonSound.play();
-						m_gameSettings.showFps = !m_gameSettings.showFps;
-						m_menu.setupMenuButtons(m_currentGameState, currentW, currentH, m_gameSettings, m_lastGameState);
+						if (m_gameSettings.VSync == true)
+						{
+							m_gameWindow.setVerticalSyncEnabled(false);
+							m_gameWindow.setFramerateLimit(120);
+							m_gameSettings.VSync = !m_gameSettings.VSync;
+							m_menu.setupMenuButtons(m_currentGameState, currentW, currentH, m_gameSettings, m_lastGameState);
+						}
+						else if (m_gameSettings.VSync == false)
+						{
+							m_gameWindow.setVerticalSyncEnabled(true);
+							m_gameWindow.setFramerateLimit(0);
+							m_gameSettings.VSync = !m_gameSettings.VSync;
+							m_menu.setupMenuButtons(m_currentGameState, currentW, currentH, m_gameSettings, m_lastGameState);
+						}
 					}
 					else if (m_menuClickType == 6)
 					{
 						m_menuButtonSound.play();
-						m_gameSettings.debugMode = !m_gameSettings.debugMode;
+						m_gameSettings.showFps = !m_gameSettings.showFps;
 						m_menu.setupMenuButtons(m_currentGameState, currentW, currentH, m_gameSettings, m_lastGameState);
 					}
 					else if (m_menuClickType == 7)
 					{
 						m_menuButtonSound.play();
-						m_currentGameState = m_lastGameState;
+						m_gameSettings.showHitbox = !m_gameSettings.showHitbox;
 						m_menu.setupMenuButtons(m_currentGameState, currentW, currentH, m_gameSettings, m_lastGameState);
 					}
 					else if (m_menuClickType == 8)
+					{
+						m_menuButtonSound.play();
+						m_currentGameState = m_lastGameState;
+						m_menu.setupMenuButtons(m_currentGameState, currentW, currentH, m_gameSettings, m_lastGameState);
+					}
+					else if (m_menuClickType == 9)
 					{
 						m_menuButtonSound.play();
 						if (!m_isFadingIn && !m_isFadingOut)
@@ -275,23 +340,25 @@ void Game::run()
 					}
 				}
 			}
-			else if (const auto *keyPressed = event->getIf<Event::KeyPressed>())
+			else if (const auto *keyPressed = event->getIf<sf::Event::KeyPressed>())
 			{
-				if (keyPressed->code == Keyboard::Key::Tab)
+				if (keyPressed->code == sf::Keyboard::Key::Tab)
 				{
 					m_gameWindow.close();
 				}
 
-				if (keyPressed->code == Keyboard::Key::Escape)
+				if (keyPressed->code == sf::Keyboard::Key::Escape)
 				{
-					if (m_currentGameState == GameState::Playing)
+								//* === UPDATE LOGIC ===
+			if (m_currentGameState == GameState::Playing)
 					{
 						m_currentGameState = GameState::Paused;
 						m_menu.setupMenuButtons(m_currentGameState, currentW, currentH, m_gameSettings, m_lastGameState);
 						m_Episode1Music.setVolume(0);
 						m_Episode2Music.setVolume(0);
 						m_Episode3Music.setVolume(0);
-						m_player.updateSound();
+						m_player.stopSound();
+						m_boss.stopSound();
 					}
 					else if (m_currentGameState == GameState::Paused)
 					{
@@ -302,7 +369,7 @@ void Game::run()
 						{
 							m_Episode1Music.setVolume(30.0f);
 							m_Episode2Music.setVolume(30.0f);
-							m_Episode3Music.setVolume(30.0f);
+							m_Episode3Music.setVolume(45.0f);
 						}
 					}
 					else if (m_currentGameState == GameState::Settings)
@@ -320,7 +387,7 @@ void Game::run()
 					}
 				}
 
-				if (keyPressed->code == Keyboard::Key::Enter)
+				if (keyPressed->code == sf::Keyboard::Key::Enter)
 				{
 					if (m_currentGameState == GameState::EpisodeTransition && m_nextEpisode == GameEpisode::Victory)
 					{
@@ -339,16 +406,19 @@ void Game::run()
 						if (m_currentGameState == GameState::MainMenu)
 						{
 							if (!m_isFadingIn)
-								startFadeOut(GameEpisode::VendingMachine);
+								//! startFadeOut(GameEpisode::VendingMachine);
+								startNewGame(false);
 						}
 						else if (m_currentGameState == GameState::GameOver)
+						{
 							startNewGame(false);
+						}
 
 						if (m_gameSettings.playMusic)
 						{
 							m_Episode1Music.setVolume(30.0f);
 							m_Episode2Music.setVolume(30.0f);
-							m_Episode3Music.setVolume(30.0f);
+							m_Episode3Music.setVolume(45.0f);
 						}
 						else
 						{
@@ -365,26 +435,35 @@ void Game::run()
 						{
 							m_Episode1Music.setVolume(30.0f);
 							m_Episode2Music.setVolume(30.0f);
-							m_Episode3Music.setVolume(30.0f);
+							m_Episode3Music.setVolume(45.0f);
 						}
 					}
 				}
 
-				if (keyPressed->code == Keyboard::Key::F11)
+				if (keyPressed->code == sf::Keyboard::Key::F11)
 				{
 					m_isFullscreen = !m_isFullscreen;
 					if (m_isFullscreen)
 					{
-						m_gameWindow.create(VideoMode::getDesktopMode(), m_gameWindowName, Style::Default);
+						m_gameWindow.create(sf::VideoMode::getDesktopMode(), m_gameWindowName, sf::Style::Default);
 						m_gameWindow.setPosition({0, 0});
 						m_currentWindowSize = m_gameWindow.getSize();
 					}
 					else
 					{
-						m_gameWindow.create(VideoMode::getDesktopMode(), m_gameWindowName, State::Fullscreen);
+						m_gameWindow.create(sf::VideoMode::getDesktopMode(), m_gameWindowName, sf::State::Fullscreen);
 					}
 					m_currentWindowSize = m_gameWindow.getSize();
-					m_gameWindow.setVerticalSyncEnabled(true);
+					if (m_gameSettings.VSync == true)
+					{
+						m_gameWindow.setVerticalSyncEnabled(true);
+						m_gameWindow.setFramerateLimit(0);
+					}
+					else if (m_gameSettings.VSync == false)
+					{
+						m_gameWindow.setVerticalSyncEnabled(false);
+						m_gameWindow.setFramerateLimit(120);
+					}
 					if (m_gameWindowIcon.getSize().x > 0)
 						m_gameWindow.setIcon(m_gameWindowIcon);
 					float sx = static_cast<float>(m_currentWindowSize.x) / static_cast<float>(m_bgTexture.getSize().x);
@@ -394,6 +473,26 @@ void Game::run()
 					m_fpsText.setPosition({m_currentWindowSize.x - m_fpsMargin, 0.0f});
 					m_fpsErrorRect.setPosition({m_currentWindowSize.x - m_fpsMargin, 0.0f});
 				}
+			}
+			else if (event->is<sf::Event::FocusLost>())
+			{
+							//* === UPDATE LOGIC ===
+			if (m_currentGameState == GameState::Playing)
+				{
+					m_currentGameState = GameState::Paused;
+
+					m_menu.setupMenuButtons(m_currentGameState, m_currentWindowSize.x, m_currentWindowSize.y, m_gameSettings, m_lastGameState);
+
+					m_Episode1Music.setVolume(0);
+					m_Episode2Music.setVolume(0);
+					m_Episode3Music.setVolume(0);
+					m_player.stopSound();
+					m_boss.stopSound();
+				}
+			}
+			else if (event->is<sf::Event::FocusGained>())
+			{
+				m_gameClock.restart();
 			}
 		}
 
@@ -427,7 +526,8 @@ void Game::run()
 					m_Episode1Music.stop();
 					m_Episode2Music.stop();
 					m_Episode3Music.stop();
-					m_player.updateSound();
+					m_player.stopSound();
+					m_boss.stopSound();
 
 					m_menu.setupMenuButtons(m_currentGameState, static_cast<float>(m_currentWindowSize.x), static_cast<float>(m_currentWindowSize.y), m_gameSettings, m_lastGameState);
 
@@ -452,31 +552,36 @@ void Game::run()
 			m_fadeRect.setFillColor(sf::Color(0, 0, 0, static_cast<int>(m_fadeAlpha)));
 		}
 
-		//* === UPDATE LOGIC ===
 		switch (m_currentGameState)
 		{
 		case GameState::Playing:
 		{
 
+			bool victoryInvincibility = false;
+			if (m_boss.getPhase() == BossPhase::Death)
+			{
+				victoryInvincibility = true;
+			}
+
 			bool shouldPlayWallSound = (m_currentEpisode == GameEpisode::VendingMachine);
-			m_player.update(dt, currentW, currentH, m_currentLeftWall, m_currentRightWall, m_currentTopWall, m_WallPushBack, shouldPlayWallSound, static_cast<int>(m_currentEpisode));
+			m_player.update(dt, currentW, currentH, m_currentLeftWall, m_currentRightWall, m_currentUpWall, m_WallPushBack, shouldPlayWallSound, static_cast<int>(m_currentEpisode));
 
 			if (m_currentEpisode == GameEpisode::VendingMachine && m_player.hasPlayerMoved() &&
-					m_Episode1Music.getStatus() != Sound::Status::Playing &&
+					m_Episode1Music.getStatus() != sf::Sound::Status::Playing &&
 					m_gameSettings.playMusic)
 			{
 				m_Episode1Music.setVolume(30.0f);
 				m_Episode1Music.play();
 			}
 			else if (m_currentEpisode == GameEpisode::Survival && m_player.hasPlayerMoved() &&
-							 m_Episode2Music.getStatus() != Sound::Status::Playing &&
+							 m_Episode2Music.getStatus() != sf::Sound::Status::Playing &&
 							 m_gameSettings.playMusic)
 			{
 				m_Episode2Music.setVolume(30.0f);
 				m_Episode2Music.play();
 			}
 			else if (m_currentEpisode == GameEpisode::BossFight && m_player.hasPlayerMoved() &&
-							 m_Episode3Music.getStatus() != Sound::Status::Playing &&
+							 m_Episode3Music.getStatus() != sf::Sound::Status::Playing &&
 							 m_gameSettings.playMusic)
 			{
 				m_Episode3Music.setVolume(15.0f);
@@ -485,10 +590,20 @@ void Game::run()
 
 			if (m_player.hasPlayerMoved() || (m_currentEpisode != GameEpisode::VendingMachine && m_currentEpisodeTime > 0.0f))
 			{
-				m_spawnTimer -= dt.asSeconds();
+				m_enemySpawnTimer -= dt.asSeconds();
 				m_currentEpisodeTime += dt.asSeconds();
 				m_heartSpawnTimer += dt.asSeconds();
-				if (m_heartSpawnTimer >= 10.0f)
+				if ((m_gameSettings.gameDifficulty == GameDifficulty::Easy) && m_heartSpawnTimer >= 25.0f)
+				{
+					spawnHeart();
+					m_heartSpawnTimer = 0.0f;
+				}
+				else if ((m_gameSettings.gameDifficulty == GameDifficulty::Normal) && m_heartSpawnTimer >= 20.0f)
+				{
+					spawnHeart();
+					m_heartSpawnTimer = 0.0f;
+				}
+				else if ((m_gameSettings.gameDifficulty == GameDifficulty::Hard) && m_heartSpawnTimer >= 5.0f)
 				{
 					spawnHeart();
 					m_heartSpawnTimer = 0.0f;
@@ -499,7 +614,8 @@ void Game::run()
 					if (!m_isFadingIn && !m_isFadingOut)
 						startFadeOut(GameEpisode::Survival);
 					m_Episode1Music.stop();
-					m_player.updateSound();
+					m_player.stopSound();
+					m_boss.stopSound();
 					break;
 				}
 				else if (m_currentEpisode == GameEpisode::Survival && m_currentEpisodeTime >= m_episodeDuration)
@@ -515,66 +631,85 @@ void Game::run()
 					break;
 				}
 
-				if (m_currentEpisode == GameEpisode::VendingMachine && m_Episode1Music.getStatus() != Sound::Status::Playing && m_gameSettings.playMusic)
+				if (m_currentEpisode == GameEpisode::VendingMachine && m_Episode1Music.getStatus() != sf::Sound::Status::Playing && m_gameSettings.playMusic)
 				{
 					m_Episode1Music.setVolume(30.0f);
 					m_Episode1Music.play();
 				}
-				else if (m_currentEpisode == GameEpisode::Survival && m_Episode2Music.getStatus() != Sound::Status::Playing && m_gameSettings.playMusic)
+				else if (m_currentEpisode == GameEpisode::Survival && m_Episode2Music.getStatus() != sf::Sound::Status::Playing && m_gameSettings.playMusic)
 				{
 					m_Episode2Music.setVolume(30.0f);
 					m_Episode2Music.play();
 				}
-				else if (m_currentEpisode == GameEpisode::BossFight && m_Episode3Music.getStatus() != Sound::Status::Playing && m_gameSettings.playMusic)
+				else if (m_currentEpisode == GameEpisode::BossFight && m_Episode3Music.getStatus() != sf::Sound::Status::Playing && m_gameSettings.playMusic)
 				{
-					m_Episode3Music.setVolume(30.0f);
+					m_Episode3Music.setVolume(45.0f);
 					m_Episode3Music.play();
 				}
+
 				if (m_currentEpisode == GameEpisode::BossFight)
 				{
-					m_boss.update(dt, m_player.getPosition(), currentW, currentH);
-
-					if (!m_boss.isAlive())
-					{
-						startTransition(GameEpisode::Victory);
-					}
-
-					bool isHit = false;
-
-					FloatRect playerRect = m_player.getHeartHitboxRect();
+					m_boss.update(dt, m_player.getPosition(), currentW, currentH, m_gameSettings);
+					isHit = false;
 
 					const auto &handleCircles = m_boss.getHandleHitboxes();
-					for (const auto &circle : handleCircles)
+					const auto &brushCircles = m_boss.getBrushHitboxes();
+					const auto &playerCircles = m_player.getHitboxes();
+
+					for (const auto &bCircle : handleCircles)
 					{
-						float closeX = max(playerRect.position.x, min(circle.center.x, playerRect.position.x + playerRect.size.x));
-						float closeY = max(playerRect.position.y, min(circle.center.y, playerRect.position.y + playerRect.size.y));
-
-						float dx = circle.center.x - closeX;
-						float dy = circle.center.y - closeY;
-
-						if ((dx * dx + dy * dy) < (circle.radius * circle.radius))
+						for (const auto &pCircle : playerCircles)
 						{
-							isHit = true;
-							break;
-						}
-					}
+							float dx = bCircle.center.x - pCircle.center.x;
+							float dy = bCircle.center.y - pCircle.center.y;
+							float distanceSqr = dx * dx + dy * dy;
+							float radiusSum = bCircle.radius + pCircle.radius;
 
+							if (distanceSqr < (radiusSum * radiusSum))
+							{
+								isHit = true;
+								break;
+							}
+						}
+						if (isHit)
+							break;
+					}
 					if (!isHit)
 					{
-						FloatRect brushRect = m_boss.getBrushHitbox();
-						if (brushRect.findIntersection(playerRect))
+						const auto &brushCircles = m_boss.getBrushHitboxes();
+						const auto &playerCircles = m_player.getHitboxes();
+
+						for (const auto &bCircle : brushCircles)
 						{
-							isHit = true;
+							for (const auto &pCircle : playerCircles)
+							{
+								float dx = bCircle.center.x - pCircle.center.x;
+								float dy = bCircle.center.y - pCircle.center.y;
+								float distanceSqr = dx * dx + dy * dy;
+								float radiusSum = bCircle.radius + pCircle.radius;
+
+								if (distanceSqr < (radiusSum * radiusSum))
+								{
+									isHit = true;
+									break;
+								}
+							}
+							if (isHit)
+								break;
 						}
 					}
-
 					if (isHit)
 					{
-						m_player.loseHealth(dt);
+						if (!victoryInvincibility)
+						{
+							m_player.loseHealth();
+						}
+
 						if (m_player.getHealth() <= 0)
 						{
 							m_currentGameState = GameState::GameOver;
-							m_player.updateSound();
+							m_player.stopSound();
+							m_boss.stopSound();
 							m_deathSound.play();
 							m_menu.setupMenuButtons(m_currentGameState, static_cast<float>(m_currentWindowSize.x), static_cast<float>(m_currentWindowSize.y), m_gameSettings, m_lastGameState);
 
@@ -593,21 +728,38 @@ void Game::run()
 				}
 				else
 				{
-					if (m_spawnTimer < 0)
+
+					if (m_currentEpisode == GameEpisode::Survival)
+					{
+						sf::FloatRect playerBounds = m_player.getPlayerHitbox();
+						float playerArea = playerBounds.size.x * playerBounds.size.y;
+
+						auto intersection = m_slowSafeZone.findIntersection(playerBounds);
+						float intersectionArea = 0.0f;
+
+						if (intersection.has_value())
+						{
+							intersectionArea = intersection->size.x * intersection->size.y;
+						}
+
+						bool isOnCarpet = (intersectionArea / playerArea) >= 0.5f;
+						m_player.updateCarpetSpeed(isOnCarpet);
+					}
+
+					if (m_enemySpawnTimer < 0)
 					{
 						Enemy tempEnemy(0, 0);
 
 						if (m_currentEpisode == GameEpisode::VendingMachine)
 						{
-							int spawnChance = rand() % 100;
-
+							int spawnChance = std::rand() % 100;
 							if (spawnChance <= 20)
 							{
 								Type currentType = Type::Box;
-								const Texture *currentEnemyTexture = &m_enemyBoxTexture;
+								const sf::Texture *currentEnemyTexture = &m_enemyBoxTexture;
 								float finalSpeed = 350.0f;
 
-								bool spawnLeft = (rand() % 2 == 0);
+								bool spawnLeft = (std::rand() % 2 == 0);
 								float spawnX = spawnLeft ? (m_machineLeftWall + 50.0f) : (currentW - m_machineRightWall - 50.0f);
 								float spawnY = -150.0f;
 
@@ -617,12 +769,12 @@ void Game::run()
 							else
 							{
 								Type currentType;
-								const Texture *currentEnemyTexture = nullptr;
+								const sf::Texture *currentEnemyTexture = nullptr;
 
-								if (rand() % 100 <= 35)
+								if (std::rand() % 100 <= 35)
 								{
 									currentType = Type::Bar;
-									if (rand() % 100 <= 49)
+									if (std::rand() % 100 <= 49)
 										currentEnemyTexture = &m_enemyBarTexture;
 									else
 									{
@@ -634,7 +786,7 @@ void Game::run()
 								{
 									currentType = Type::Can;
 									if (!m_enemyCanTextures.empty())
-										currentEnemyTexture = &m_enemyCanTextures[rand() % m_enemyCanTextures.size()];
+										currentEnemyTexture = &m_enemyCanTextures[std::rand() % m_enemyCanTextures.size()];
 								}
 
 								if (currentEnemyTexture)
@@ -644,17 +796,17 @@ void Game::run()
 									if (m_gameSettings.gameDifficulty == GameDifficulty::Easy)
 									{
 										finalSpeed = (currentType == Type::Bar || currentType == Type::Bar2) ? -500.0f : 900.0f;
-										m_spawnTimer = 0.5f;
+										m_enemySpawnTimer = 0.5f;
 									}
 									else if (m_gameSettings.gameDifficulty == GameDifficulty::Normal)
 									{
 										finalSpeed = (currentType == Type::Bar || currentType == Type::Bar2) ? -700.0f : 900.0f;
-										m_spawnTimer = 0.3f;
+										m_enemySpawnTimer = 0.3f;
 									}
 									else
 									{
 										finalSpeed = (currentType == Type::Bar || currentType == Type::Bar2) ? -800.0f : 950.0f;
-										m_spawnTimer = 0.2f;
+										m_enemySpawnTimer = 0.2f;
 									}
 
 									float spawnY = (currentType == Type::Bar || currentType == Type::Bar2) ? currentH + 100.0f : -300.0f;
@@ -664,7 +816,7 @@ void Game::run()
 									float halfWidth = (texWidth * enemyScale) / 2.0f;
 									float minX = m_machineLeftWall + halfWidth;
 									float maxX = currentW - m_machineRightWall - halfWidth;
-									float spawnX = minX + (rand() % static_cast<int>(maxX - minX));
+									float spawnX = minX + (std::rand() % static_cast<int>(maxX - minX));
 
 									tempEnemy.spawn(spawnX, spawnY, finalSpeed, *currentEnemyTexture, currentType, m_player.getPosition());
 									m_enemies.push_back(tempEnemy);
@@ -674,10 +826,10 @@ void Game::run()
 						else if (m_currentEpisode == GameEpisode::Survival)
 						{
 							Type currentType;
-							const Texture *currentEnemyTexture = nullptr;
+							const sf::Texture *currentEnemyTexture = nullptr;
 							float finalSpeed = 0.0f;
 
-							if (rand() % 2 == 0)
+							if (std::rand() % 2 == 0)
 							{
 								currentType = Type::HandStraight;
 								currentEnemyTexture = &m_enemyHand1Texture;
@@ -703,41 +855,41 @@ void Game::run()
 
 							if (m_gameSettings.gameDifficulty == GameDifficulty::Easy)
 							{
-								m_spawnTimer = 1.0f;
+								m_enemySpawnTimer = 1.0f;
 							}
 							if (m_gameSettings.gameDifficulty == GameDifficulty::Normal)
 							{
-								m_spawnTimer = 0.75f;
+								m_enemySpawnTimer = 0.75f;
 							}
 							if (m_gameSettings.gameDifficulty == GameDifficulty::Hard)
 							{
-								m_spawnTimer = 0.5f;
+								m_enemySpawnTimer = 0.5f;
 							}
 
 							// SPAWN SIDE
-							int side = rand() % 4;
+							int side = std::rand() % 4;
 							float offset = 100.0f;
 							float spawnX = 0, spawnY = 0;
 
 							if (side == 0) // UP
 							{
-								spawnX = static_cast<float>(rand() % m_gameWindow.getSize().x);
+								spawnX = static_cast<float>(std::rand() % m_gameWindow.getSize().x);
 								spawnY = -offset;
 							}
 							else if (side == 1) // RIGHT
 							{
 								spawnX = m_gameWindow.getSize().x + offset;
-								spawnY = static_cast<float>(rand() % m_gameWindow.getSize().y);
+								spawnY = static_cast<float>(std::rand() % m_gameWindow.getSize().y);
 							}
 							else if (side == 2) // DOWN
 							{
-								spawnX = static_cast<float>(rand() % m_gameWindow.getSize().x);
+								spawnX = static_cast<float>(std::rand() % m_gameWindow.getSize().x);
 								spawnY = m_gameWindow.getSize().y + offset;
 							}
 							else // LEFT
 							{
 								spawnX = -offset;
-								spawnY = static_cast<float>(rand() % m_gameWindow.getSize().y);
+								spawnY = static_cast<float>(std::rand() % m_gameWindow.getSize().y);
 							}
 
 							if (currentEnemyTexture)
@@ -803,7 +955,7 @@ void Game::run()
 					{
 						if (cookie.active)
 						{
-							if (cookie.sprite.getGlobalBounds().findIntersection(m_player.getHeartHitboxRect()))
+							if (cookie.sprite.getGlobalBounds().findIntersection(m_player.getPlayerHitbox()))
 							{
 								isHit = true;
 								break;
@@ -817,8 +969,8 @@ void Game::run()
 
 					for (const auto &pCircle : playerCircles)
 					{
-						float closeX = max(enemyBounds.position.x, min(pCircle.center.x, enemyBounds.position.x + enemyBounds.size.x));
-						float closeY = max(enemyBounds.position.y, min(pCircle.center.y, enemyBounds.position.y + enemyBounds.size.y));
+						float closeX = std::max(enemyBounds.position.x, std::min(pCircle.center.x, enemyBounds.position.x + enemyBounds.size.x));
+						float closeY = std::max(enemyBounds.position.y, std::min(pCircle.center.y, enemyBounds.position.y + enemyBounds.size.y));
 
 						float dx = pCircle.center.x - closeX;
 						float dy = pCircle.center.y - closeY;
@@ -837,11 +989,15 @@ void Game::run()
 
 			if (isHit)
 			{
-				m_player.loseHealth(dt);
+				if (!victoryInvincibility)
+				{
+					m_player.loseHealth();
+				}
 				if (m_player.getHealth() <= 0)
 				{
 					m_currentGameState = GameState::GameOver;
-					m_player.updateSound();
+					m_player.stopSound();
+					m_boss.stopSound();
 					m_deathSound.play();
 					m_menu.setupMenuButtons(m_currentGameState, currentW, currentH, m_gameSettings, m_lastGameState);
 					m_Episode1Music.stop();
@@ -853,25 +1009,26 @@ void Game::run()
 			for (auto it = m_hearts.begin(); it != m_hearts.end();)
 			{
 				it->animationTime += dt.asSeconds();
-				float scaleBase = 0.1f;
+
+				float colorFactor = (-sin(it->animationTime * 5.0f) + 1.0f) / 2.0f;
+				sf::Color colorA = sf::Color(255, 255, 255);
+				sf::Color colorB = sf::Color(255, 20, 20);
+				float heartR = static_cast<uint8_t>(colorA.r + colorFactor * (colorB.r - colorA.r));
+				float heartG = static_cast<uint8_t>(colorA.g + colorFactor * (colorB.g - colorA.g));
+				float heartB = static_cast<uint8_t>(colorA.b + colorFactor * (colorB.b - colorA.b));
+
+				it->healSprite.setColor(sf::Color(heartR, heartG, heartB));
+
+				float scaleBase = 0.15f;
 				float scaleWave = 0.02f * sin(it->animationTime * 5.0f);
 				it->healSprite.setScale({scaleBase + scaleWave, scaleBase + scaleWave});
 
-				if (it->healSprite.getGlobalBounds().findIntersection(m_player.getHeartHitboxRect()))
+				if (it->healSprite.getGlobalBounds().findIntersection(m_player.getPlayerHitbox()))
 				{
-					sf::Vector2f pPos = m_player.getPosition();
-					sf::Vector2f hPos = it->healSprite.getPosition();
-					float dx = pPos.x - hPos.x;
-					float dy = pPos.y - hPos.y;
-					float dist = sqrt(dx * dx + dy * dy);
-
-					if (dist < 50.0f)
-					{
-						m_healSound.play();
-						m_player.gainHealth(1);
-						it = m_hearts.erase(it);
-						continue;
-					}
+					m_healSound.play();
+					m_player.gainHealth(1);
+					it = m_hearts.erase(it);
+					continue;
 				}
 
 				++it;
@@ -885,6 +1042,8 @@ void Game::run()
 		}
 
 		case GameState::Paused:
+		case GameState::Settings:
+		case GameState::GameOver:
 		{
 			break;
 		}
@@ -943,18 +1102,15 @@ void Game::run()
 			}
 			break;
 		}
-		case GameState::Settings:
-			break;
-		case GameState::GameOver:
-			break;
 		}
 
-		//* === DRAW LOGIC ===
-		m_gameWindow.clear(Color::Black);
+					//* === DRAW LOGIC ===
+			m_gameWindow.clear(sf::Color::Black);
 
 		if (m_currentGameState == GameState::GameOver)
 		{
-			m_player.updateSound();
+			m_player.stopSound();
+			m_boss.stopSound();
 			m_player.draw(m_gameWindow, m_gameSettings);
 			m_menu.draw(m_gameWindow, m_currentGameState);
 		}
@@ -978,6 +1134,10 @@ void Game::run()
 				for (auto &enemy : m_enemies)
 				{
 					enemy.draw(m_gameWindow, m_gameSettings);
+				}
+				if (m_currentEpisode == GameEpisode::Survival && m_gameSettings.showHitbox == true)
+				{
+					m_gameWindow.draw(m_slowSafeZoneRect);
 				}
 				if (m_currentEpisode == GameEpisode::BossFight)
 				{
@@ -1017,15 +1177,10 @@ void Game::spawnHeart()
 
 	heart.healSprite.setScale({0.1f, 0.1f});
 
-	float minX = 100.0f;
-	float maxX = m_currentWindowSize.x - 100.0f;
-	float minY = 100.0f;
-	float maxY = m_currentWindowSize.y - 100.0f;
+	float heartX = m_machineLeftWall + static_cast<float>(std::rand()) / (static_cast<float>(RAND_MAX / (m_currentWindowSize.x - m_machineRightWall - m_machineLeftWall - 100.0f)));
+	float heartY = m_machineUpWall + static_cast<float>(std::rand()) / (static_cast<float>(RAND_MAX / (m_currentWindowSize.y - m_machineUpWall - 100.0f)));
 
-	float x = minX + static_cast<float>(rand()) / (static_cast<float>(RAND_MAX / (maxX - minX)));
-	float y = minY + static_cast<float>(rand()) / (static_cast<float>(RAND_MAX / (maxY - minY)));
-
-	heart.healSprite.setPosition({x, y});
+	heart.healSprite.setPosition({heartX, heartY});
 	heart.isActive = true;
 
 	m_hearts.push_back(heart);
@@ -1033,47 +1188,37 @@ void Game::spawnHeart()
 
 void Game::startNewGame(bool useTransition)
 {
+	GameEpisode startingEpisode = GameEpisode::VendingMachine;
+
+	setupEpisode(startingEpisode);
 	int difficultyHP = 3;
-	float difficultyPlayerSpeed = 550.0f;
 	float difficultyInvincibility = 3.0f;
 
-	switch (m_gameSettings.gameDifficulty)
-	{
-	case GameDifficulty::Easy:
+	if (m_gameSettings.gameDifficulty == GameDifficulty::Easy)
 	{
 		difficultyHP = 4;
-		difficultyPlayerSpeed = 650.0f;
 		difficultyInvincibility = 4.0f;
-		break;
 	}
-	case GameDifficulty::Normal:
+	else if (m_gameSettings.gameDifficulty == GameDifficulty::Hard)
 	{
-		break;
-	}
-	case GameDifficulty::Hard:
-	{
-		difficultyHP = 1;
-		difficultyPlayerSpeed = 500.0f;
-		difficultyInvincibility = 0.0f;
-		break;
-	}
+		difficultyHP = 2;
+		difficultyInvincibility = 2.0f;
 	}
 
 	m_player.resetGame(m_startPosX, m_startPosY, difficultyHP, difficultyPlayerSpeed, difficultyInvincibility, m_gameSettings.gameDifficulty);
 
 	m_gameClock.restart();
-	m_spawnTimer = 0.0f;
+	m_enemySpawnTimer = 0.0f;
 	m_enemies.clear();
 
 	if (useTransition)
 	{
-		startTransition(GameEpisode::BossFight);
+		startTransition(GameEpisode::VendingMachine);
 	}
 	else
 	{
 		setupEpisode(GameEpisode::VendingMachine);
 		m_currentGameState = GameState::Playing;
-
 		m_gameClock.restart();
 	}
 }
@@ -1085,80 +1230,70 @@ void Game::setupEpisode(GameEpisode episode)
 	m_hearts.clear();
 	m_heartSpawnTimer = 0.0f;
 
+	switch (m_gameSettings.gameDifficulty)
+	{
+	case GameDifficulty::Easy:
+		m_currentEpisode == GameEpisode::Survival ? difficultyPlayerSpeed = 450.0f : difficultyPlayerSpeed = 650.0f;
+		break;
+	case GameDifficulty::Normal:
+		m_currentEpisode == GameEpisode::Survival ? difficultyPlayerSpeed = 350.0f : difficultyPlayerSpeed = 550.0f;
+		break;
+	case GameDifficulty::Hard:
+		m_currentEpisode == GameEpisode::Survival ? difficultyPlayerSpeed = 400.0f : difficultyPlayerSpeed = 500.0f;
+		break;
+	}
+
 	switch (m_currentEpisode)
 	{
 	case GameEpisode::VendingMachine:
 	{
 		m_currentLeftWall = m_machineLeftWall;
 		m_currentRightWall = m_machineRightWall;
-		m_currentTopWall = m_machineTopWall;
+		m_currentUpWall = m_machineUpWall;
 		m_WallPushBack = 15.0f;
 		m_currentEpisodeTime = 0.0f;
-		m_episodeDuration = 0.01f;
+		// !
+		m_episodeDuration = 90.0f;
+		// !
 
 		if (!m_bgTexture.loadFromFile("assets/images/Episode_1.jpg"))
-			cerr << "Error bg" << endl;
-
+			std::cerr << "Error bg" << std::endl;
 		m_currentEnemyTextures.clear();
-		m_enemyCanTextures.clear();
-
-		if (!m_enemyBarTexture.loadFromFile("assets/images/enemy_bar1.png"))
-			cerr << "Bar texture error!" << endl;
-		if (!m_enemyBar2Texture.loadFromFile("assets/images/enemy_bar2.png"))
-			cerr << "Bar2 texture error!" << endl;
-		Texture tempTexture;
-		if (tempTexture.loadFromFile("assets/images/enemy_can1.png"))
-			m_enemyCanTextures.push_back(tempTexture);
-		else
-			cerr << "Enemy 1 texture error!" << endl;
-		if (tempTexture.loadFromFile("assets/images/enemy_can2.png"))
-			m_enemyCanTextures.push_back(tempTexture);
-		else
-			cerr << "Enemy 2 texture error!" << endl;
-		if (tempTexture.loadFromFile("assets/images/enemy_can3.png"))
-			m_enemyCanTextures.push_back(tempTexture);
-		else
-			cerr << "Enemy 3 texture error!" << endl;
-		if (tempTexture.loadFromFile("assets/images/enemy_can4.png"))
-			m_enemyCanTextures.push_back(tempTexture);
-		else
-			cerr << "Enemy 4 texture error!" << endl;
-		if (tempTexture.loadFromFile("assets/images/enemy_can5.png"))
-			m_enemyCanTextures.push_back(tempTexture);
-		else
-			cerr << "Enemy 5 texture error!" << endl;
-		// TODO зробити 1 тип нового рядка а не 2
-		if (!m_enemyBoxTexture.loadFromFile("assets/images/enemy_box1.png"))
-			cerr << "Box tex error\n";
-		if (!m_enemyCookieTexture.loadFromFile("assets/images/enemy_box1_particle.png"))
-			cerr << "Cookie tex error\n";
-		if (!m_enemyCookieBuffer.loadFromFile("assets/sound/box_particle.ogg"))
-			cerr << "Cookie Sound error!" << endl;
-		else
-			m_cookieSound.setBuffer(m_enemyCookieBuffer);
 
 		break;
 	}
 	case GameEpisode::Survival:
+	{
 		m_currentEpisodeTime = 0.0f;
 		m_currentLeftWall = 0.0f;
 		m_currentRightWall = 0.0f;
-		m_currentTopWall = 0.0f;
+		m_currentUpWall = 0.0f;
 		m_WallPushBack = 0.0f;
-		m_episodeDuration = 0.01f;
+		// !
+		m_episodeDuration = 120.0f;
+		// !
+		m_slowZone.size.x = m_currentWindowSize.x;
+		m_slowZone.size.y = m_currentWindowSize.y;
+		m_slowSafeZone.size.x = m_currentWindowSize.x / 1.7;
+		m_slowSafeZone.size.y = m_currentWindowSize.y / 1.7 + 30.0f;
+		m_slowSafeZone.position.x = (m_currentWindowSize.x / 2.0f - m_slowSafeZone.size.x / 2.0f) + 2.0f;
+		m_slowSafeZone.position.y = (m_currentWindowSize.y / 2.0f - m_slowSafeZone.size.y / 2.0f) - 2.0f;
+		m_slowSafeZoneRect.setSize({m_slowSafeZone.size.x, m_slowSafeZone.size.y});
+		m_slowSafeZoneRect.setOrigin({m_slowSafeZoneRect.getLocalBounds().size.x / 2.0f, m_slowSafeZoneRect.getLocalBounds().size.y / 2.0f});
+		float slowSafeZoneCenterX = m_slowSafeZone.position.x + m_slowSafeZone.size.x / 2.0f;
+		float slowSafeZoneCenterY = m_slowSafeZone.position.y + m_slowSafeZone.size.y / 2.0f;
+		m_slowSafeZoneRect.setPosition({slowSafeZoneCenterX, slowSafeZoneCenterY});
+		m_slowSafeZoneRect.setFillColor(sf::Color::Transparent);
+		m_slowSafeZoneRect.setOutlineColor(sf::Color::Green);
+		m_slowSafeZoneRect.setOutlineThickness(2.0f);
 
 		m_player.startNextEpisode(m_currentWindowSize.x / 2.0f, m_currentWindowSize.y / 2.0f);
 
-		if (!m_bgTexture.loadFromFile("assets/images/Episode_2.jpg"))
-			cerr << "Error bg" << endl;
-		if (m_enemyHand1Texture.loadFromFile("assets/images/enemy_hand1.png"))
-			m_enemyHand1.setTexture(m_enemyHand1Texture, true);
-		else
-			cerr << "Enemy Hand texture error!" << endl;
-		if (m_enemyHand2Texture.loadFromFile("assets/images/enemy_hand2.png"))
-			m_enemyHand2.setTexture(m_enemyHand2Texture, true);
-		else
-			cerr << "Enemy Hand 2 texture error!" << endl;
+		if (!m_bgTexture.loadFromFile("assets/images/Episode_2.png"))
+			std::cerr << "Error bg" << std::endl;
+		break;
+	}
+	case GameEpisode::Victory:
 		break;
 
 	case GameEpisode::BossFight:
@@ -1166,19 +1301,19 @@ void Game::setupEpisode(GameEpisode episode)
 		m_currentEpisodeTime = 0.0f;
 		m_currentLeftWall = 0.0f;
 		m_currentRightWall = 0.0f;
-		m_currentTopWall = 0.0f;
-		m_episodeDuration = 90.0f;
+		m_currentUpWall = 0.0f;
+		//!
+		m_episodeDuration = 240.0f;
+		//!
 
 		m_player.startNextEpisode(m_currentWindowSize.x / 2.0f, m_currentWindowSize.y - 200.0f);
 
 		m_boss.spawn(m_currentWindowSize.x / 2.0f, -500.0f, m_gameSettings);
 
 		if (!m_bgTexture.loadFromFile("assets/images/Episode_3.png"))
-			cerr << "Error bg" << endl;
+			std::cerr << "Error bg" << std::endl;
 	}
 	break;
-	case GameEpisode::Victory:
-		break;
 	}
 	m_bgSprite.setTexture(m_bgTexture, true);
 
@@ -1187,28 +1322,31 @@ void Game::setupEpisode(GameEpisode episode)
 	m_bgSprite.setScale({m_bgScaleX, m_bgScaleY});
 }
 
+
+
 void Game::startTransition(GameEpisode nextEpisode)
 {
 	m_nextEpisode = nextEpisode;
 	m_currentGameState = GameState::EpisodeTransition;
 	m_transitionTimer = 5.0f;
-	m_player.updateSound();
+	m_player.stopSound();
+	m_boss.stopSound();
 	m_menu.updateMusicVolume(false);
 	m_transitionSound.setVolume(50.0f);
 
-	if (m_transitionSound.getStatus() != Sound::Status::Playing)
+	if (m_transitionSound.getStatus() != sf::Sound::Status::Playing)
 		m_transitionSound.play();
 
 	if (m_nextEpisode == GameEpisode::VendingMachine)
-		m_loadingText.setString("Episode 1\nThe Birth");
+		m_loadingText.setString("Episode 1 - Birth");
 	else if (m_nextEpisode == GameEpisode::Survival)
-		m_loadingText.setString("Episode 2\nThirst");
+		m_loadingText.setString("Episode 2 - Thirst");
 	else if (m_nextEpisode == GameEpisode::BossFight)
-		m_loadingText.setString("Episode 3\nCLEANING!");
+		m_loadingText.setString("Episode 3 - CLEANING!");
 	else if (m_nextEpisode == GameEpisode::Victory)
 	{
 		if (!m_bgTexture.loadFromFile("assets/images/victory_bg.jpg"))
-			cerr << "Victory BG error" << endl;
+			std::cerr << "Victory BG error" << std::endl;
 
 		m_bgSprite.setTexture(m_bgTexture, true);
 		float scaleX = static_cast<float>(m_currentWindowSize.x) / m_bgTexture.getSize().x;
@@ -1216,7 +1354,7 @@ void Game::startTransition(GameEpisode nextEpisode)
 		m_bgSprite.setScale({scaleX, scaleY});
 
 		m_loadingText.setCharacterSize(200);
-		m_loadingText.setString("VICTORY!\n\nTo be continued...");
+		m_loadingText.setString("You Survived!\n\nTo be continued...");
 
 		sf::FloatRect textRect = m_loadingText.getLocalBounds();
 		m_loadingText.setOrigin({textRect.position.x + textRect.size.x / 2.0f,
@@ -1227,8 +1365,8 @@ void Game::startTransition(GameEpisode nextEpisode)
 		m_loadingTextBG.setSize({600.0f, 300.0f});
 		m_loadingTextBG.setOrigin({m_loadingTextBG.getSize().x / 2.0f, m_loadingTextBG.getSize().y / 2.0f});
 		m_loadingTextBG.setPosition(m_loadingText.getPosition());
-		m_loadingTextBG.setFillColor(Color(0, 255, 0, 185));
-		m_loadingTextBG.setOutlineColor(Color::White);
+		m_loadingTextBG.setFillColor(sf::Color(0, 255, 0, 185));
+		m_loadingTextBG.setOutlineColor(sf::Color::White);
 		m_loadingTextBG.setOutlineThickness(5.0f);
 		m_winSound.play();
 	}

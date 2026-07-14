@@ -171,7 +171,7 @@ void Enemy::draw(RenderWindow &window, const GameSettings &gameSettings)
 		{
 			if (cookie.active)
 				window.draw(cookie.sprite);
-			if (gameSettings.debugMode)
+			if (gameSettings.showHitbox)
 			{
 				FloatRect b = cookie.sprite.getGlobalBounds();
 				RectangleShape r;
@@ -185,7 +185,7 @@ void Enemy::draw(RenderWindow &window, const GameSettings &gameSettings)
 		}
 	}
 
-	if (gameSettings.debugMode)
+	if (gameSettings.showHitbox)
 	{
 		if (m_type == Type::Can)
 		{

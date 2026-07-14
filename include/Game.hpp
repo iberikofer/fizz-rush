@@ -75,7 +75,7 @@ private:
 	int m_menuClickType;
 	float m_machineLeftWall;
 	float m_machineRightWall;
-	float m_machineTopWall;
+	float m_machineUpWall;
 	float m_WallPushBack;
 	sf::SoundBuffer m_menuButtonSoundBuffer;
 	sf::Sound m_menuButtonSound;
@@ -93,11 +93,12 @@ private:
 	sf::Sound m_deathSound;
 	sf::SoundBuffer m_healSoundBuffer;
 	sf::Sound m_healSound;
-	float m_spawnTimer;
+	float m_enemySpawnTimer;
 	float m_currentEpisodeTime;
 	float m_currentLeftWall;
 	float m_currentRightWall;
-	float m_currentTopWall;
+	float m_currentUpWall;
+	float difficultyPlayerSpeed;
 	float m_episodeDuration;
 	float m_transitionTimer;
 	GameEpisode m_nextEpisode;
@@ -114,6 +115,10 @@ private:
 	std::vector<HeartPickup> m_hearts;
 	float m_heartSpawnTimer;
 	void spawnHeart();
+	sf::FloatRect m_slowZone;
+	sf::FloatRect m_slowSafeZone;
+	sf::RectangleShape m_slowSafeZoneRect;
+	bool isHit;
 
 	//* === GAME OBJETS ===
 	Menu m_menu;

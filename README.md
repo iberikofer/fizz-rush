@@ -1,6 +1,6 @@
 # 🚀 Fizz Rush
 
-![C++](https://img.shields.io/badge/C++-17-00599C?logo=c%2B%2B&logoColor=white) ![SFML](https://img.shields.io/badge/Library-SFML_3.0.2-8ECA45) ![Platform](https://img.shields.io/badge/Platform-Windows-0078D6?logo=windows&logoColor=white) ![Episodes](https://img.shields.io/badge/Episodes-3-ff69b4) ![Build](https://img.shields.io/badge/Build-Passing-brightgreen)
+![C++](https://img.shields.io/badge/C++-17-red?logo=c%2B%2B&logoColor=white) ![SFML](https://img.shields.io/badge/Library-SFML_3.0.2-yellow) ![Platform](https://img.shields.io/badge/Platform-Windows-0078D6?logo=windows&logoColor=white) ![Episodes](https://img.shields.io/badge/Episodes-3-purple) ![Build](https://img.shields.io/badge/Build-Passing-brightgreen)
 
 > A dynamic arcade game built with C++ and SFML 3.0.2
 

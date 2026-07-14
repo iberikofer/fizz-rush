@@ -10,7 +10,6 @@ obj/
 .clangd
 .ai/
 dump/
-Collision pack/
 SFML-3.0.2/
 
 .DS_Store

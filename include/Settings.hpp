@@ -23,6 +23,7 @@ struct GameSettings {
   GameDifficulty gameDifficulty = GameDifficulty::Normal;
   WindowMode windowMode = WindowMode::Fullscreen;
   bool playMusic = true;
-  bool debugMode = false;
+  bool VSync = true;
   bool showFps = false;
+  bool showHitbox = false;
 };
