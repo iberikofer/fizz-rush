@@ -44,7 +44,7 @@ void Enemy::spawn(float m_startPosX, float m_startPosY, float m_difficultyEnemyS
 	if (m_type == Type::Box)
 	{
 		m_hasShot = false;
-		m_shootHeight = 100.0f + (rand() % 100);
+		m_shootHeight = -5.0f + (rand() % 150);
 
 		m_particleTexturePtr = particleTexture;
 

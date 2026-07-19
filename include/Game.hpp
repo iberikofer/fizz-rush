@@ -49,17 +49,11 @@ private:
 	sf::Texture m_bgTexture;
 	sf::Sprite m_bgSprite;
 	sf::Texture m_enemyBarTexture;
-	sf::Sprite m_enemyBar;
 	sf::Texture m_enemyHand1Texture;
-	sf::Sprite m_enemyHand1;
 	sf::Texture m_enemyBar2Texture;
-	sf::Sprite m_enemyBar2;
 	sf::Texture m_enemyHand2Texture;
-	sf::Sprite m_enemyHand2;
 	sf::Texture m_enemyBoxTexture;
-	sf::Sprite m_enemyBox;
 	sf::Texture m_enemyCookieTexture;
-	sf::Sprite m_enemyCookie;
 	sf::SoundBuffer m_enemyCookieBuffer;
 	sf::Sound m_cookieSound;
 	float m_startPosX;
@@ -75,7 +69,7 @@ private:
 	int m_menuClickType;
 	float m_machineLeftWall;
 	float m_machineRightWall;
-	float m_machineUpWall;
+	float m_machineTopWall;
 	float m_WallPushBack;
 	sf::SoundBuffer m_menuButtonSoundBuffer;
 	sf::Sound m_menuButtonSound;
@@ -93,11 +87,17 @@ private:
 	sf::Sound m_deathSound;
 	sf::SoundBuffer m_healSoundBuffer;
 	sf::Sound m_healSound;
+	sf::SoundBuffer m_heartSpawnSoundBuffer;
+	sf::Sound m_heartSpawnSound;
+	sf::SoundBuffer m_gameLoadingSoundBuffer;
+	sf::Sound m_gameLoadingSound;
+	sf::SoundBuffer m_gameStartSoundBuffer;
+	sf::Sound m_gameStartSound;
 	float m_enemySpawnTimer;
 	float m_currentEpisodeTime;
 	float m_currentLeftWall;
 	float m_currentRightWall;
-	float m_currentUpWall;
+	float m_currentTopWall;
 	float difficultyPlayerSpeed;
 	float m_episodeDuration;
 	float m_transitionTimer;
@@ -118,7 +118,7 @@ private:
 	sf::FloatRect m_slowZone;
 	sf::FloatRect m_slowSafeZone;
 	sf::RectangleShape m_slowSafeZoneRect;
-	bool isHit;
+
 
 	//* === GAME OBJETS ===
 	Menu m_menu;

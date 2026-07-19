@@ -39,8 +39,6 @@ public:
 	int getHealth() const;
 	bool isAlive() const;
 	BossPhase getPhase();
-	AttackState getAttackState() const { return m_attackState; }
-	bool getIsBossCentered() const { return isBossCentered; }
 
 private:
 	sf::Texture m_bossTexture;
@@ -62,6 +60,8 @@ private:
 	sf::Sound m_attackSound;
 	sf::SoundBuffer warningSoundBuffer;
 	sf::Sound m_warningSound;
+	sf::SoundBuffer m_antiCheatSoundBuffer;
+	sf::Sound m_antiCheatSound;
 	BossPhase m_bossPhase;
 	AttackState m_attackState;
 	float m_phaseTimer;
@@ -75,7 +75,6 @@ private:
 	float m_attackTimer;
 	float attackSpeed;
 	float spinSpeed;
-	float m_warningDuration;
 	float m_phase1Duration;
 	float m_phase2Duration;
 	float m_phase3Duration;
@@ -87,4 +86,5 @@ private:
 	int m_bounceCount;
 	sf::Vector2f m_dashVelocity;
 	float m_currentDashSpeed;
+	float m_startRotation = 0.0f;
 };

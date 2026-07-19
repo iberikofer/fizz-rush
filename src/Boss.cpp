@@ -5,55 +5,61 @@
 #include <iostream>
 
 //* === INITIAL SETUP ===
-Boss::Boss()
-    : m_boss(m_bossTexture), m_bossWarning(m_bossWarningTexture),
-      m_deathSound(deathSoundBuffer), m_attackSound(attackSoundBuffer),
-      m_warningSound(warningSoundBuffer) {
-  m_active = false;
-  m_maxHP = 50;
-  m_currentHP = m_maxHP;
-  m_speed = 150.0f;
-  m_attackState = AttackState::Idle;
-  m_currentIdleDuration = 1.5f;
-  m_attackTimer = 0.0f;
-  attackSpeed = 0.0f;
-  spinSpeed = 0.0f;
-  m_warningDuration = 0.0f;
-  m_attackSound.setVolume(100.0f);
-  m_warningSound.setVolume(30.0f);
-  m_deathSound.setVolume(30.0f);
-  // !
-  m_phase1Duration = 100.0f;
-  m_phase2Duration = 100.0f;
-  m_phase3Duration = 100.0f;
-  // !
-  newAlpha = 255.0f;
-  m_currentBossScaleX = 1.0f;
+Boss::Boss() : m_boss(m_bossTexture),
+							 m_bossWarning(m_bossWarningTexture),
+							 m_deathSound(deathSoundBuffer),
+							 m_attackSound(attackSoundBuffer),
+							 m_warningSound(warningSoundBuffer),
+							 m_antiCheatSound(m_antiCheatSoundBuffer)
+{
+	m_active = false;
+	m_maxHP = 50;
+	m_currentHP = m_maxHP;
+	m_speed = 150.0f;
+	m_attackState = AttackState::Idle;
+	m_currentIdleDuration = 1.5f;
+	m_attackTimer = 0.0f;
+	attackSpeed = 0.0f;
+	spinSpeed = 0.0f;
+	m_attackSound.setVolume(100.0f);
+	m_warningSound.setVolume(30.0f);
+	m_deathSound.setVolume(30.0f);
+	m_antiCheatSound.setVolume(30.0f);
+	// !
+	m_phase1Duration = 100.0f;
+	m_phase2Duration = 100.0f;
+	m_phase3Duration = 100.0f;
+	// !
+	newAlpha = 255.0f;
+	m_currentBossScaleX = 1.0f;
 }
 
-void Boss::loadAssets() {
-  if (!m_bossTexture.loadFromFile("assets/images/boss_1.png"))
-    std::cerr << "Boss texture error!" << std::endl;
-  if (!m_bossWarningTexture.loadFromFile("assets/images/boss_warning.png"))
-    std::cerr << "Boss warning texture error!" << std::endl;
-  if (!attackSoundBuffer.loadFromFile("assets/sound/boss_attack1.ogg"))
-    std::cerr << "Boss attack sound error!" << std::endl;
-  if (!warningSoundBuffer.loadFromFile("assets/sound/boss_warning.ogg"))
-    std::cerr << "Boss attack sound error!" << std::endl;
-  if (!deathSoundBuffer.loadFromFile("assets/sound/boss_death.ogg"))
-    std::cerr << "Boss death sound error!" << std::endl;
+void Boss::loadAssets()
+{
+	if (!m_bossTexture.loadFromFile("assets/images/boss_1.png"))
+		std::cerr << "Boss texture error!" << std::endl;
+	if (!m_bossWarningTexture.loadFromFile("assets/images/boss_warning.png"))
+		std::cerr << "Boss warning texture error!" << std::endl;
+	if (!attackSoundBuffer.loadFromFile("assets/sound/boss_attack1.ogg"))
+		std::cerr << "Boss attack sound error!" << std::endl;
+	if (!warningSoundBuffer.loadFromFile("assets/sound/boss_warning.ogg"))
+		std::cerr << "Boss warning sound error!" << std::endl;
+	if (!deathSoundBuffer.loadFromFile("assets/sound/boss_death.ogg"))
+		std::cerr << "Boss death sound error!" << std::endl;
+	if (!m_antiCheatSoundBuffer.loadFromFile("assets/sound/cat_laugh.ogg"))
+		std::cerr << "Anti-cheat sound error!" << std::endl;
 
-  m_boss.setTexture(m_bossTexture, true);
-  m_boss.setScale({1.0f, 1.0f});
-  m_bossWarning.setTexture(m_bossWarningTexture, true);
-  m_warningScaleX = 0.3f;
-  m_warningScaleY = 0.3f;
-  m_bossWarning.setScale({m_warningScaleX, m_warningScaleY});
+	m_boss.setTexture(m_bossTexture, true);
+	m_boss.setScale({1.0f, 1.0f});
+	m_bossWarning.setTexture(m_bossWarningTexture, true);
+	m_warningScaleX = 0.3f;
+	m_warningScaleY = 0.3f;
+	m_bossWarning.setScale({m_warningScaleX, m_warningScaleY});
 
-  sf::FloatRect bounds = m_boss.getLocalBounds();
-  m_boss.setOrigin({bounds.size.x / 2, bounds.size.y / 2});
-  bounds = m_bossWarning.getLocalBounds();
-  m_bossWarning.setOrigin({bounds.size.x / 2, bounds.size.y / 2});
+	sf::FloatRect bounds = m_boss.getLocalBounds();
+	m_boss.setOrigin({bounds.size.x / 2, bounds.size.y / 2});
+	bounds = m_bossWarning.getLocalBounds();
+	m_bossWarning.setOrigin({bounds.size.x / 2, bounds.size.y / 2});
 }
 
 void Boss::spawn(float startX, float startY, const GameSettings &settings) {
@@ -152,7 +158,7 @@ void Boss::update(sf::Time dt, sf::Vector2f playerPos, float windowWidth,
           m_isSpinning360 = true;
           m_spinProgress = 0.0f;
           m_antiCheatTimer = 0.0f;
-          m_warningSound.play();
+          m_antiCheatSound.play();
         }
       } else {
         m_antiCheatTimer = 0.0f;
