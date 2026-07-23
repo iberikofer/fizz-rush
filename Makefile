@@ -6,7 +6,7 @@ WINDRES = windres
 CXXFLAGS = -std=c++17 -Wall -I"SFML-3.0.2/include" -I"include"
 
 # Flags for linking (SFML library path and modules)
-LDFLAGS = -L"SFML-3.0.2/lib" -lsfml-graphics -lsfml-window -lsfml-system -lsfml-audio -lsfml-network
+LDFLAGS = -L"SFML-3.0.2/lib" -lsfml-graphics -lsfml-window -lsfml-system -lsfml-audio -lxinput
 
 # Files
 SRC = $(wildcard src/*.cpp)

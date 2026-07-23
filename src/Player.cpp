@@ -97,13 +97,13 @@ void Player::update(sf::Time dt, float winWidth, float winHeight, float m_machin
 	float inputX = 0.0f;
 	float inputY = 0.0f;
 
-	if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Left))
+	if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Left) || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A))
 		inputX -= 1.0f;
-	if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Right))
+	if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Right) || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D))
 		inputX += 1.0f;
-	if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Up))
+	if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Up) || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W))
 		inputY -= 1.0f;
-	if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Down))
+	if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Down) || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::S))
 		inputY += 1.0f;
 
 	if (inputX == 0.0f && inputY == 0.0f && sf::Joystick::isConnected(0))

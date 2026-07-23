@@ -16,9 +16,11 @@
 
 - **⚡ Dynamic Gameplay:** Fast-paced action where surviving becomes harder the longer you play, featuring an intelligent enemy spawn system.
 - **👾 Diverse Enemies:** Face off against multiple enemy types (Hands, Bars, Chasers) and survive the ultimate Boss battle in the finale!
+- **👹 Multi-Phase Boss Battle:** The final episode features a meticulously designed boss fight. The boss transitions through different phases, unleashing varying attack patterns including ricocheting cookies and sweeping brushes (fast and slow variants), challenging your reflexes to the limit!
+- **✨ Visual Polish & Effects:** Experience a handcrafted particle system used for boss defeat animations, seamless screen fade transitions between episodes, and a highly polished interactive UI with butter-smooth hover and press animations.
 - **❤️ Health & Protection System:** Collect hearts dropped during gameplay to restore health. Gain a brief shield of invulnerability after taking damage, giving you a safe moment to escape and reposition yourself.
 - **🎶 Immersive Audio:** Each episode features its own unique background soundtrack and satisfying sound effects for hits, healing, and UI interactions.
-- **⚙️ Customizable Settings:** A fully functional interactive menu allowing you to toggle music, switch difficulties (Easy, Normal, Hard), and manage debug mode (which visually displays object hitboxes).
+- **⚙️ Extensive Settings & Persistence:** An interactive, bilingual (English/Ukrainian) settings menu featuring an intuitive 2-column layout with 2D grid navigation. Toggle Music, VSync, FPS Counter, Debug Hitboxes, and Difficulty (Easy, Normal, Hard). All preferences are automatically saved to a `settings.ini` file and loaded on your next session!
 
 ## 🛠 Technical Details
 
@@ -27,7 +29,10 @@
 - **Compiler:** GCC / MinGW
 - **Architecture Highlights:**
   - **Custom Physics & Collision Detection:** Uses an optimized circle-based intersection algorithm (`CollisionCircle`) to handle precise hitboxes instead of basic rectangles.
+  - **Particle & VFX System:** A lightweight, custom-built particle engine handling temporary visual effects like enemy particles and healing indicators without massive performance overhead.
   - **State Machine Architecture:** Robust handling of game states (`MainMenu`, `Playing`, `Paused`, `Settings`, `GameOver`, `EpisodeTransition`, `Victory`) and Boss AI phases (`Starting`, `Phase1`, `Phase2`, `Death`).
+  - **Configuration Management:** Reliable parsing and generation of INI configuration files using standard C++ streams for seamless state persistence across sessions.
+  - **Dynamic Input Switching:** Seamlessly switch between Mouse, Keyboard, and Gamepad on the fly, with intelligent mouse-snapping to the actively focused UI element.
   - **Smooth Transitions:** Custom alpha-blending logic for seamless fade-ins and fade-outs between menus and game episodes.
 
 ## 🏆 Project Achievements
@@ -46,14 +51,18 @@ Fizz Rush supports both Keyboard and Gamepad/Joystick inputs for a versatile gam
 
 ### ⌨️ Keyboard & Mouse
 
-- `Arrow Keys` (Up, Down, Left, Right) — Move the soda can during gameplay.
+- `Arrow Keys` (Up, Down, Left, Right) / `W, S, A, D` — Move the soda can during gameplay, or navigate the UI menus!
+- `Enter` — Confirm selection in the UI menus.
 - `Left Mouse Click` — Interact with the Main Menu and UI buttons.
-- `Escape` — Pause the game / Return to Main Menu.
-- `Tab` — Quick exit / Close the game window.
+- `Escape` — Pause the game / Return to Main Menu / Go Back in menus.
 
 ### 🎮 Gamepad / Joystick
 
-- `Left Analog Stick` (Axis X / Axis Y) — Smoothly steer and move the soda can (supports built-in deadzone filtering for precise movement).
+- `Left Analog Stick` (Axis X / Axis Y) / `D-Pad` — Smoothly steer and move the soda can (supports built-in deadzone filtering for precise movement), or navigate the UI menus.
+- `A Button` — Confirm selection in the UI menus.
+- `B Button` — Go back / Exit menus.
+- `Start Button` — Pause the game / Return to Main Menu.
+- *Note on Rumble / Vibration*: The game supports controller vibration (rumble) when you take damage or defeat a boss! **This feature is exclusively available on Windows (via XInput).**
 - *Make sure your controller is connected before starting the game for it to be automatically detected!*
 
 ---
@@ -100,6 +109,25 @@ This project was developed strictly for educational and academic purposes during
 - Any trademarks, brands, or specific characters depicted in this game remain the property of their respective owners. Their inclusion is purely for educational demonstration and creative learning context under Fair Use guidelines.
 - If you are the copyright holder of any asset used in this repository and wish for it to be removed, please open an issue and it will be taken down immediately.
 
+### 🎵 Credits & Acknowledgements
+
+<details>
+<summary>Click to view Audio & Music Credits</summary>
+
+- Music by [Maksym Malko](https://pixabay.com/users/backgroundmusicforvideos-46459014/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=402451) from [Pixabay](https://pixabay.com//?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=402451)
+- Sound Effect by [Aleksandr Karabanov](https://pixabay.com/users/muzaproduction-24990238/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=13491) from [Pixabay](https://pixabay.com//?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=13491)
+- Sound Effect by [Universfield](https://pixabay.com/users/universfield-28281460/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=142334) from [Pixabay](https://pixabay.com/sound-effects//?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=142334)
+- Music by [Luca Di Alessandro](https://pixabay.com/users/lucadialessandro-25927643/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=146875) from [Pixabay](https://pixabay.com//?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=146875)
+- Music by [Melody Ayres-Griffiths](https://pixabay.com/users/melodyayresgriffiths-27269767/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=139389) from [Pixabay](https://pixabay.com/music//?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=139389)
+- Music by [Emmraan](https://pixabay.com/users/emmraan-24732583/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=261292) from [Pixabay](https://pixabay.com//?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=261292)
+- Sound Effect by [freesound_community](https://pixabay.com/users/freesound_community-46691455/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=14562) from [Pixabay](https://pixabay.com//?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=14562)
+- Sound Effect by [Phurisarah H](https://pixabay.com/users/doubleducks-45864631/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=360379) from [Pixabay](https://pixabay.com//?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=360379)
+- Sound Effect by [freesound_community](https://pixabay.com/ru/users/freesound_community-46691455/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=80047) from Pixabay
+- Sound Effect by [freesound_community](https://pixabay.com/ru/users/freesound_community-46691455/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=101422) from Pixabay
+- Sound Effect by [freesound_community](https://pixabay.com/ru/users/freesound_community-46691455/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=101553) from Pixabay
+
+</details>
+
 ---
 
 ## 🇺🇦 Fizz Rush (Українська версія)
@@ -116,9 +144,11 @@ This project was developed strictly for educational and academic purposes during
 
 - **⚡ Динамічний геймплей:** Швидкісний екшен, у якому виживати стає все важче з кожною хвилиною гри, завдяки продуманій системі появи ворогів.
 - **👾 Різноманітні вороги:** Зіткніться з різними типами ворогів (Руки, Блоки, Переслідувачі) та виживіть в ультимативній битві з Босом у фіналі!
+- **👹 Багатофазна Битва з Босом:** Фінальний епізод пропонує ретельно продуману битву. Босс змінює фази, використовуючи різні патерни атак, включаючи печиво, що рикошетить від стін, та гігантські щітки (повільні й швидкі), перевіряючи ваші рефлекси на міцність!
+- **✨ Візуальний блиск та ефекти:** Насолоджуйтесь власною системою частинок для анімацій (наприклад, при знищенні боса), безшовними затемненнями екрану при переході між епізодами та надзвичайно відшліфованим інтерактивним інтерфейсом із плавними анімаціями наведення та натискання кнопок.
 - **❤️ Система здоров'я та захисту:** Збирайте сердечка під час гри, щоб відновлювати здоров'я. Після отримання шкоди ваш персонаж отримує тимчасовий щит невразливості, що дає змогу безпечно відступити та змінити позицію.
 - **🎶 Атмосферний звук:** Кожен епізод має власний унікальний саундтрек та приємні звукові ефекти для ударів, лікування та взаємодії з меню.
-- **⚙️ Налаштування гри:** Повністю функціональне інтерактивне меню дозволяє вмикати/вимикати музику, змінювати складність (Легка, Нормальна, Важка) та керувати режимом налагодження (debug mode, який візуально відображає хітбокси об'єктів).
+- **⚙️ Розширені налаштування та збереження:** Двомовне (Англійська/Українська) інтерактивне меню з інтуїтивно зрозумілим двоколонковим дизайном та 2D-навігацією. Ви можете налаштувати музику, VSync, лічильник FPS, хітбокси та рівень складності (Легкий, Нормальний, Важкий). Усі ваші налаштування автоматично зберігаються у файл `settings.ini` та завантажуються під час наступного запуску гри!
 
 ## 🛠 Технічні деталі
 
@@ -127,7 +157,10 @@ This project was developed strictly for educational and academic purposes during
 - **Компілятор:** GCC / MinGW
 - **Архітектурні особливості:**
   - **Кастомна фізика та виявлення зіткнень:** Використовує оптимізований алгоритм перевірки перетинів на основі кіл (`CollisionCircle`) для обробки точних хітбоксів замість звичайних прямокутників.
+  - **Система частинок та VFX:** Легкий, власноруч написаний рушій частинок, що обробляє тимчасові візуальні ефекти, такі як частинки ворогів або індикатори лікування, без зайвого навантаження на продуктивність.
   - **Архітектура керування станами (State Machine):** Надійна обробка ігрових станів (`MainMenu`, `Playing`, `Paused`, `Settings`, `GameOver`, `EpisodeTransition`, `Victory`) та фаз штучного інтелекту Боса (`Starting`, `Phase1`, `Phase2`, `Death`).
+  - **Керування конфігурацією:** Надійний парсинг та генерація INI-файлів за допомогою стандартних потоків вводу/виводу C++ для збереження налаштувань між ігровими сесіями.
+  - **Динамічне перемикання вводу:** Миттєве перемикання між мишею, клавіатурою та геймпадом "на льоту" з розумним "прилипанням" курсора миші до активного елемента інтерфейсу.
   - **Плавні переходи:** Кастомна логіка альфа-змішування (alpha-blending) для безшовних ефектів появи та згасання екрану між меню та ігровими епізодами.
 
 ## 🏆 Досягнення проєкту
@@ -146,14 +179,18 @@ Fizz Rush підтримує як клавіатуру, так і геймпад
 
 ### ⌨️ Клавіатура та миша
 
-- `Стрілки` (Вгору, Вниз, Вліво, Вправо) — Переміщення банки під час гри.
+- `Стрілки` (Вгору, Вниз, Вліво, Вправо) / `W, S, A, D` — Переміщення банки під час гри, або навігація по меню!
+- `Enter` — Підтвердження вибору в меню.
 - `Лівий клік миші` — Взаємодія з головним меню та кнопками інтерфейсу.
-- `Escape` — Пауза / Повернення в головне меню.
-- `Tab` — Швидкий вихід / Закрити вікно гри.
+- `Escape` — Пауза / Повернення в головне меню / Назад у меню.
 
 ### 🎮 Геймпад / Джойстик
 
-- `Лівий аналоговий стік` (Вісь X / Вісь Y) — Плавне керування та переміщення банки (підтримує вбудовану фільтрацію "мертвої зони" для точного переміщення).
+- `Лівий аналоговий стік` (Вісь X / Вісь Y) / `Хрестовина (D-Pad)` — Плавне керування та переміщення банки (підтримує вбудовану фільтрацію "мертвої зони" для точного переміщення), або навігація по меню.
+- `Кнопка A` — Підтвердження вибору в меню.
+- `Кнопка B` — Назад / Вихід із меню.
+- `Кнопка Start` — Пауза / Повернення в головне меню.
+- *Примітка щодо вібрації (Rumble)*: Гра підтримує вібрацію геймпада при отриманні шкоди або знищенні боса! **Ця функція працює виключно на Windows (через XInput).**
 - *Переконайтеся, що ваш контролер підключений перед початком гри, щоб він був виявлений автоматично!*
 
 ---
@@ -199,6 +236,25 @@ Fizz Rush підтримує як клавіатуру, так і геймпад
 - Певні графічні ресурси, зображення та аудіофайли, використані в цьому проєкті, були взяті з інтернету.
 - Будь-які торгові марки, бренди або специфічні персонажі, зображені в цій грі, залишаються власністю їх відповідних власників. Їх включення сюди здійснюється виключно для навчальної демонстрації та творчого навчального контексту згідно з принципами добросовісного використання (Fair Use).
 - Якщо ви є правовласником будь-якого ресурсу, використаного в цьому репозиторії, і бажаєте, щоб його було видалено, будь ласка, відкрийте Issue, і він буде негайно видалений.
+
+### 🎵 Подяки та Автори (Credits)
+
+<details>
+<summary>Натисніть, щоб розгорнути список авторів аудіо</summary>
+
+- Music by [Maksym Malko](https://pixabay.com/users/backgroundmusicforvideos-46459014/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=402451) from [Pixabay](https://pixabay.com//?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=402451)
+- Sound Effect by [Aleksandr Karabanov](https://pixabay.com/users/muzaproduction-24990238/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=13491) from [Pixabay](https://pixabay.com//?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=13491)
+- Sound Effect by [Universfield](https://pixabay.com/users/universfield-28281460/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=142334) from [Pixabay](https://pixabay.com/sound-effects//?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=142334)
+- Music by [Luca Di Alessandro](https://pixabay.com/users/lucadialessandro-25927643/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=146875) from [Pixabay](https://pixabay.com//?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=146875)
+- Music by [Melody Ayres-Griffiths](https://pixabay.com/users/melodyayresgriffiths-27269767/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=139389) from [Pixabay](https://pixabay.com/music//?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=139389)
+- Music by [Emmraan](https://pixabay.com/users/emmraan-24732583/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=261292) from [Pixabay](https://pixabay.com//?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=261292)
+- Sound Effect by [freesound_community](https://pixabay.com/users/freesound_community-46691455/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=14562) from [Pixabay](https://pixabay.com//?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=14562)
+- Sound Effect by [Phurisarah H](https://pixabay.com/users/doubleducks-45864631/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=360379) from [Pixabay](https://pixabay.com//?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=360379)
+- Sound Effect by [freesound_community](https://pixabay.com/ru/users/freesound_community-46691455/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=80047) from Pixabay
+- Sound Effect by [freesound_community](https://pixabay.com/ru/users/freesound_community-46691455/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=101422) from Pixabay
+- Sound Effect by [freesound_community](https://pixabay.com/ru/users/freesound_community-46691455/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=101553) from Pixabay
+
+</details>
 
 ---
 

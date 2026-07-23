@@ -31,6 +31,7 @@ public:
 	void update(sf::Time dt, sf::Vector2f playerPos, float windowWidth, float Windowlength, const GameSettings &settings);
 	void draw(sf::RenderWindow &window, const GameSettings &settings);
 	void stopSound();
+	void playRicochetSound();
 
 	const std::vector<CollisionCircle> &getHandleHitboxes();
 	const std::vector<CollisionCircle> &getBrushHitboxes();
@@ -62,6 +63,12 @@ private:
 	sf::Sound m_warningSound;
 	sf::SoundBuffer m_antiCheatSoundBuffer;
 	sf::Sound m_antiCheatSound;
+	sf::SoundBuffer slowBrushSoundBuffer;
+	sf::Sound slowBrushSound;
+	sf::SoundBuffer fastBrushSoundBuffer;
+	sf::Sound fastBrushSound;
+	sf::SoundBuffer m_ricochetSoundBuffer;
+	std::vector<sf::Sound> m_ricochetSounds;
 	BossPhase m_bossPhase;
 	AttackState m_attackState;
 	float m_phaseTimer;
@@ -84,6 +91,7 @@ private:
 	bool m_isSpinning360;
 	float m_spinProgress;
 	int m_bounceCount;
+	int m_bounceLimit;
 	sf::Vector2f m_dashVelocity;
 	float m_currentDashSpeed;
 	float m_startRotation = 0.0f;

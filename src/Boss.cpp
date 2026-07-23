@@ -5,61 +5,67 @@
 #include <iostream>
 
 //* === INITIAL SETUP ===
-Boss::Boss() : m_boss(m_bossTexture),
-							 m_bossWarning(m_bossWarningTexture),
-							 m_deathSound(deathSoundBuffer),
-							 m_attackSound(attackSoundBuffer),
-							 m_warningSound(warningSoundBuffer),
-							 m_antiCheatSound(m_antiCheatSoundBuffer)
-{
-	m_active = false;
-	m_maxHP = 50;
-	m_currentHP = m_maxHP;
-	m_speed = 150.0f;
-	m_attackState = AttackState::Idle;
-	m_currentIdleDuration = 1.5f;
-	m_attackTimer = 0.0f;
-	attackSpeed = 0.0f;
-	spinSpeed = 0.0f;
-	m_attackSound.setVolume(100.0f);
-	m_warningSound.setVolume(30.0f);
-	m_deathSound.setVolume(30.0f);
-	m_antiCheatSound.setVolume(30.0f);
-	// !
-	m_phase1Duration = 100.0f;
-	m_phase2Duration = 100.0f;
-	m_phase3Duration = 100.0f;
-	// !
-	newAlpha = 255.0f;
-	m_currentBossScaleX = 1.0f;
+Boss::Boss()
+    : m_boss(m_bossTexture), m_bossWarning(m_bossWarningTexture),
+      m_deathSound(deathSoundBuffer), m_attackSound(attackSoundBuffer),
+      m_warningSound(warningSoundBuffer),
+      m_antiCheatSound(m_antiCheatSoundBuffer),
+      slowBrushSound(slowBrushSoundBuffer),
+      fastBrushSound(fastBrushSoundBuffer) {
+  m_active = false;
+  m_maxHP = 50;
+  m_currentHP = m_maxHP;
+  m_speed = 150.0f;
+  m_attackState = AttackState::Idle;
+  m_currentIdleDuration = 1.5f;
+  m_attackTimer = 0.0f;
+  attackSpeed = 0.0f;
+  spinSpeed = 0.0f;
+  m_bounceLimit = 5;
+  m_attackSound.setVolume(100.0f);
+  m_warningSound.setVolume(30.0f);
+  m_deathSound.setVolume(30.0f);
+  m_antiCheatSound.setVolume(30.0f);
+  // !
+  m_phase1Duration = 100.0f;
+  m_phase2Duration = 100.0f;
+  m_phase3Duration = 100.0f;
+  // !
+  newAlpha = 255.0f;
+  m_currentBossScaleX = 1.0f;
 }
 
-void Boss::loadAssets()
-{
-	if (!m_bossTexture.loadFromFile("assets/images/boss_1.png"))
-		std::cerr << "Boss texture error!" << std::endl;
-	if (!m_bossWarningTexture.loadFromFile("assets/images/boss_warning.png"))
-		std::cerr << "Boss warning texture error!" << std::endl;
-	if (!attackSoundBuffer.loadFromFile("assets/sound/boss_attack1.ogg"))
-		std::cerr << "Boss attack sound error!" << std::endl;
-	if (!warningSoundBuffer.loadFromFile("assets/sound/boss_warning.ogg"))
-		std::cerr << "Boss warning sound error!" << std::endl;
-	if (!deathSoundBuffer.loadFromFile("assets/sound/boss_death.ogg"))
-		std::cerr << "Boss death sound error!" << std::endl;
-	if (!m_antiCheatSoundBuffer.loadFromFile("assets/sound/cat_laugh.ogg"))
-		std::cerr << "Anti-cheat sound error!" << std::endl;
+void Boss::loadAssets() {
+  if (!m_bossTexture.loadFromFile("assets/images/boss_1.png"))
+    std::cerr << "Boss texture error!" << std::endl;
+  if (!m_bossWarningTexture.loadFromFile("assets/images/boss_warning.png"))
+    std::cerr << "Boss warning texture error!" << std::endl;
+  if (!attackSoundBuffer.loadFromFile("assets/sound/boss_attack1.ogg"))
+    std::cerr << "Boss attack sound error!" << std::endl;
+  if (!warningSoundBuffer.loadFromFile("assets/sound/boss_warning.ogg"))
+    std::cerr << "Boss warning sound error!" << std::endl;
+  if (!deathSoundBuffer.loadFromFile("assets/sound/boss_death.ogg"))
+    std::cerr << "Boss death sound error!" << std::endl;
+  if (!m_ricochetSoundBuffer.loadFromFile("assets/sound/ricochet.ogg"))
+    std::cerr << "Ricochet sound error!" << std::endl;
 
-	m_boss.setTexture(m_bossTexture, true);
-	m_boss.setScale({1.0f, 1.0f});
-	m_bossWarning.setTexture(m_bossWarningTexture, true);
-	m_warningScaleX = 0.3f;
-	m_warningScaleY = 0.3f;
-	m_bossWarning.setScale({m_warningScaleX, m_warningScaleY});
+  for (int i = 0; i < 5; ++i) {
+    sf::Sound s(m_ricochetSoundBuffer);
+    s.setVolume(50.0f);
+    m_ricochetSounds.push_back(s);
+  }
 
-	sf::FloatRect bounds = m_boss.getLocalBounds();
-	m_boss.setOrigin({bounds.size.x / 2, bounds.size.y / 2});
-	bounds = m_bossWarning.getLocalBounds();
-	m_bossWarning.setOrigin({bounds.size.x / 2, bounds.size.y / 2});
+  m_boss.setTexture(m_bossTexture, true);
+  m_boss.setScale({1.0f, 1.0f});
+  m_bossWarning.setTexture(m_bossWarningTexture, true);
+  m_warningScaleX = 0.3f;
+  m_warningScaleY = 0.3f;
+  m_bossWarning.setScale({m_warningScaleX, m_warningScaleY});
+
+  sf::FloatRect bounds = m_boss.getLocalBounds();
+  m_boss.setOrigin({bounds.size.x / 2, bounds.size.y / 2});
+  bounds = m_bossWarning.getLocalBounds();
+  m_bossWarning.setOrigin({bounds.size.x / 2, bounds.size.y / 2});
 }
 
 void Boss::spawn(float startX, float startY, const GameSettings &settings) {
@@ -84,6 +90,7 @@ void Boss::spawn(float startX, float startY, const GameSettings &settings) {
   m_isSpinning360 = false;
   m_spinProgress = 0.0f;
   m_bounceCount = 0;
+  m_bounceLimit = 5;
   m_currentDashSpeed = 0.0f;
 
   if (settings.gameDifficulty == GameDifficulty::Easy)
@@ -376,26 +383,26 @@ void Boss::update(sf::Time dt, sf::Vector2f playerPos, float windowWidth,
         float screenEdgeOffset = 80.0f;
         sf::Vector2f startPos;
 
-        if (side == 0) { // UP
+        if (side == 0) { //* UP
           startPos = {margin + static_cast<float>(
                                    std::rand() %
                                    static_cast<int>(windowWidth - 2 * margin)),
                       -500.0f};
           m_bossWarning.setPosition({startPos.x, screenEdgeOffset});
-        } else if (side == 1) { // DOWN
+        } else if (side == 1) { //* DOWN
           startPos = {margin + static_cast<float>(
                                    std::rand() %
                                    static_cast<int>(windowWidth - 2 * margin)),
                       windowHeight + 500.0f};
           m_bossWarning.setPosition(
               {startPos.x, windowHeight - screenEdgeOffset});
-        } else if (side == 2) { // LEFT
+        } else if (side == 2) { //* LEFT
           startPos = {-500.0f,
                       margin + static_cast<float>(
                                    std::rand() % static_cast<int>(windowHeight -
                                                                   2 * margin))};
           m_bossWarning.setPosition({screenEdgeOffset, startPos.y});
-        } else { // RIGHT
+        } else { //* RIGHT
           startPos = {windowWidth + 500.0f,
                       margin + static_cast<float>(
                                    std::rand() % static_cast<int>(windowHeight -
@@ -485,8 +492,7 @@ void Boss::update(sf::Time dt, sf::Vector2f playerPos, float windowWidth,
       float centerY = windowHeight / 2.0f - 100.0f;
 
       if (!isBossCentered && transitionTimer == 0.0f) {
-        float targetX = windowWidth / 2.0f;
-        float targetY = windowHeight / 2.0f + 200.0f;
+        //? Starting position logic can go here
       }
 
       if (!isBossCentered) {
@@ -501,7 +507,6 @@ void Boss::update(sf::Time dt, sf::Vector2f playerPos, float windowWidth,
             isDescentFinished = true;
             transitionTimer = 0.0f;
           }
-          float totalPhaseTime = 9.0f;
           float waitDuration = 4.0f;
 
           transitionTimer += dt.asSeconds();
@@ -516,8 +521,6 @@ void Boss::update(sf::Time dt, sf::Vector2f playerPos, float windowWidth,
           float activeEightTime = transitionTimer - waitDuration;
           float eightDuration = 6.0f;
 
-          float slowdownDuration = 1.5f;
-          float slowdownStart = eightDuration - slowdownDuration;
           float entryLerp = std::min(1.0f, activeEightTime / 2.0f);
           float exitLerp = std::max(
               0.0f, std::min(1.0f, (eightDuration - activeEightTime) / 2.0f));
@@ -653,6 +656,7 @@ void Boss::update(sf::Time dt, sf::Vector2f playerPos, float windowWidth,
         m_attackState = AttackState::Attacking;
         m_attackSound.play();
         m_bounceCount = 0;
+        m_bounceLimit = 2 + (rand() % 4);
         m_currentDashSpeed = 0.0f;
       }
     } break;
@@ -717,12 +721,12 @@ void Boss::update(sf::Time dt, sf::Vector2f playerPos, float windowWidth,
                               m_dashVelocity.y * m_dashVelocity.y);
         m_dashVelocity = (m_dashVelocity / len) * m_currentDashSpeed;
 
-        m_attackSound.play();
+        playRicochetSound();
 
         m_boss.setPosition({std::clamp(pos.x, 51.0f, windowWidth - 51.0f),
                             std::clamp(pos.y, 51.0f, windowHeight - 51.0f)});
 
-        if (m_bounceCount >= 5) {
+        if (m_bounceCount >= m_bounceLimit) {
           m_attackState = AttackState::Idle;
           m_attackTimer = 0.0f;
           m_bounceCount = 0;
@@ -776,7 +780,7 @@ void Boss::update(sf::Time dt, sf::Vector2f playerPos, float windowWidth,
       if (m_deathSound.getStatus() != sf::Sound::Status::Playing)
         m_deathSound.play();
 
-      // ALTERNATIVE DEATH ANIMATION (SHAKING)
+      //? ALTERNATIVE DEATH ANIMATION (SHAKING)
       // float offsetX = static_cast<float>((std::rand() % 9) - 3);
       // float offsetY = static_cast<float>((std::rand() % 9) - 3);
       // m_boss.setPosition({targetDeathPos.x + offsetX, targetDeathPos.y +
@@ -903,6 +907,15 @@ void Boss::stopSound() {
   m_attackSound.stop();
   m_warningSound.stop();
   m_deathSound.stop();
+}
+
+void Boss::playRicochetSound() {
+  for (auto& s : m_ricochetSounds) {
+    if (s.getStatus() != sf::Sound::Status::Playing) {
+      s.play();
+      return;
+    }
+  }
 }
 
 BossPhase Boss::getPhase() { return m_bossPhase; }

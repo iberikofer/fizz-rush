@@ -13,6 +13,7 @@ enum class GameState
 	Playing,
 	Paused,
 	Settings,
+	Controls,
 	GameOver,
 	EpisodeTransition
 };
@@ -31,6 +32,8 @@ enum class GameDifficulty
 	Hard
 };
 
+#include <string>
+
 struct GameSettings
 {
 	GameDifficulty gameDifficulty = GameDifficulty::Normal;
@@ -39,4 +42,8 @@ struct GameSettings
 	bool VSync = true;
 	bool showFps = false;
 	bool showHitbox = false;
+	bool ukrainianLanguage = false;
+
+	void loadFromFile(const std::string& filename);
+	void saveToFile(const std::string& filename) const;
 };

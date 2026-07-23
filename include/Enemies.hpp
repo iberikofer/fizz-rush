@@ -1,5 +1,6 @@
 #pragma once
 #include <SFML/Graphics.hpp>
+#include <SFML/Audio.hpp>
 #include <vector>
 #include "Settings.hpp"
 
@@ -36,6 +37,7 @@ public:
 	const std::vector<CookieParticle> &getCookies();
 	sf::FloatRect getBounds();
 	sf::Vector2f getPosition();
+	bool checkCollision(const CollisionCircle &circle) const;
 
 private:
 	sf::Texture m_enemyTexture;
