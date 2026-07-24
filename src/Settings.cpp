@@ -5,7 +5,10 @@
 
 void GameSettings::loadFromFile(const std::string& filename) {
     std::ifstream file(filename);
-    if (!file.is_open()) return;
+    if (!file.is_open()) {
+        saveToFile(filename);
+        return;
+    }
 
     std::string line;
     while (std::getline(file, line)) {
@@ -19,6 +22,7 @@ void GameSettings::loadFromFile(const std::string& filename) {
                     if (key == "difficulty") gameDifficulty = static_cast<GameDifficulty>(intValue);
                     else if (key == "windowMode") windowMode = static_cast<WindowMode>(intValue);
                     else if (key == "playMusic") playMusic = intValue;
+                    else if (key == "playSfx") playSfx = intValue;
                     else if (key == "VSync") VSync = intValue;
                     else if (key == "showFps") showFps = intValue;
                     else if (key == "showHitbox") showHitbox = intValue;
@@ -35,9 +39,12 @@ void GameSettings::saveToFile(const std::string& filename) const {
     std::ofstream file(filename);
     if (!file.is_open()) return;
 
+    file << "# 1 - ON, 0 - OFF\n\n";
+
     file << "difficulty=" << static_cast<int>(gameDifficulty) << "\n";
     file << "windowMode=" << static_cast<int>(windowMode) << "\n";
     file << "playMusic=" << playMusic << "\n";
+    file << "playSfx=" << playSfx << "\n";
     file << "VSync=" << VSync << "\n";
     file << "showFps=" << showFps << "\n";
     file << "showHitbox=" << showHitbox << "\n";

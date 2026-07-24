@@ -22,12 +22,13 @@ Game::Game()
       m_cookieSound(m_enemyCookieBuffer), m_fpsText(m_fpsFont),
       m_fpsErrorRect({100.f, 100.f}),
       m_menuButtonSound(m_menuButtonSoundBuffer),
+      m_menuSwitchSound(m_menuSwitchSoundBuffer),
       m_Episode1Music(m_Episode1MusicBuffer),
       m_Episode2Music(m_Episode2MusicBuffer),
       m_Episode3Music(m_Episode3MusicBuffer),
       m_transitionSound(m_transitionSoundBuffer), m_winSound(m_winSoundBuffer),
-      m_winMusic(m_winMusicBuffer), m_deathSound(m_deathSoundBuffer),
-      m_healSound(m_healSoundBuffer),
+      m_deathFizzSound(m_deathFizzSoundBuffer), m_winMusic(m_winMusicBuffer),
+      m_deathSound(m_deathSoundBuffer), m_healSound(m_healSoundBuffer),
       m_heartSpawnSound(m_heartSpawnSoundBuffer),
       m_gameLoadingSound(m_gameLoadingSoundBuffer),
       m_gameStartSound(m_gameStartSoundBuffer),
@@ -85,17 +86,19 @@ Game::Game()
     m_gameWindow.setIcon(m_gameWindowIcon);
   else
     std::cerr << "Window icon error!" << std::endl;
-  if (!m_bgTexture.loadFromFile("assets/images/Episode_1.jpg"))
-    std::cerr << "Background error!" << std::endl;
-  if (!m_Episode1MusicBuffer.loadFromFile("assets/sound/Episode_1.ogg"))
-    std::cerr << "Game music 1 error!" << std::endl;
-  if (!m_Episode2MusicBuffer.loadFromFile("assets/sound/Episode_2.ogg"))
-    std::cerr << "Game music 2 error!" << std::endl;
+  if (!m_bgTexture.loadFromFile("assets/images/episode_1.jpg"))
+    std::cerr << "Background texture error!" << std::endl;
+  if (!m_Episode1MusicBuffer.loadFromFile("assets/sound/episode_1.ogg"))
+    std::cerr << "Episode 1 music error!" << std::endl;
+  if (!m_Episode2MusicBuffer.loadFromFile("assets/sound/episode_2.ogg"))
+    std::cerr << "Episode 2 music error!" << std::endl;
   if (!m_Episode3MusicBuffer.loadFromFile("assets/sound/boss_music.ogg"))
     std::cerr << "Boss music error!" << std::endl;
   if (!m_transitionSoundBuffer.loadFromFile(
-          "assets/sound/Episode_transition.ogg"))
+          "assets/sound/episode_transition.ogg"))
     std::cerr << "Transition sound error!" << std::endl;
+  if (!m_deathFizzSoundBuffer.loadFromFile("assets/sound/death_fizz.ogg"))
+    std::cerr << "Death Fizz sound error!" << std::endl;
   if (!m_heartPickupTexture.loadFromFile("assets/images/heart_heal.png"))
     std::cerr << "Heart pickup texture error!" << std::endl;
   if (!m_enemyBarTexture.loadFromFile("assets/images/enemy_bar1.png"))
@@ -140,9 +143,18 @@ Game::Game()
   m_Episode1Music.setLooping(true);
   m_Episode2Music.setLooping(true);
   m_Episode3Music.setLooping(true);
-  m_menuButtonSound.setVolume(50.0f);
-  m_cookieSound.setVolume(20.0f);
-  m_healSound.setVolume(50.0f);
+  m_cookieSound.setVolume(AudioConfig::COOKIE);
+  m_healSound.setVolume(AudioConfig::HEAL);
+  m_menuButtonSound.setVolume(AudioConfig::BUTTON_SELECT);
+  m_menuSwitchSound.setVolume(AudioConfig::BUTTON_SWITCH);
+  m_winSound.setVolume(AudioConfig::WIN_SOUND);
+  m_gameStartSound.setVolume(AudioConfig::GAME_START);
+  m_transitionSound.setVolume(AudioConfig::TRANSITION);
+  m_winMusic.setVolume(AudioConfig::WIN_MUSIC);
+  m_deathSound.setVolume(AudioConfig::DEATH);
+  m_heartSpawnSound.setVolume(AudioConfig::HEART_SPAWN);
+  m_gameLoadingSound.setVolume(AudioConfig::GAME_LOADING);
+  m_deathFizzSound.setVolume(AudioConfig::DEATH_FIZZ);
   m_bgSprite.setTexture(m_bgTexture, true);
   float m_bgScaleX =
       m_gameWindow.getSize().x / static_cast<float>(m_bgTexture.getSize().x);
@@ -176,8 +188,10 @@ Game::Game()
   m_menu.setupMenuButtons(m_currentGameState, m_currentWindowSize.x,
                           m_currentWindowSize.y, m_gameSettings,
                           m_lastGameState);
-  if (!m_menuButtonSoundBuffer.loadFromFile("assets/sound/button.ogg"))
+  if (!m_menuButtonSoundBuffer.loadFromFile("assets/sound/button_select.ogg"))
     std::cerr << "Menu sound error!" << std::endl;
+  if (!m_menuSwitchSoundBuffer.loadFromFile("assets/sound/button_switch.ogg"))
+    std::cerr << "Menu switch sound error!" << std::endl;
   if (!m_winSoundBuffer.loadFromFile("assets/sound/victory.ogg"))
     std::cerr << "Victory sound error!" << std::endl;
   else
@@ -205,6 +219,11 @@ Game::Game()
   m_fadeAlpha = 255.0f;
   m_isFadingIn = true;
   m_isFadingOut = false;
+
+  updateSfxVolume(m_gameSettings.playSfx);
+  m_player.updateSfxVolume(m_gameSettings.playSfx);
+  m_boss.updateSfxVolume(m_gameSettings.playSfx);
+
   m_gameClock.restart();
 }
 
@@ -223,6 +242,14 @@ void Game::run() {
         int action = m_pendingMenuAction;
         m_pendingMenuAction = -1;
         handleMenuAction(action, currentW, currentH);
+      }
+    }
+
+    if (m_menuSwitchSoundTimer > 0.0f) {
+      m_menuSwitchSoundTimer -= dt.asSeconds();
+      if (m_menuSwitchSoundTimer <= 0.0f) {
+        m_menuSwitchSound.play();
+        m_menuSwitchSoundTimer = 0.0f;
       }
     }
 
@@ -266,7 +293,11 @@ void Game::run() {
         //* Update hover
         sf::Vector2f worldPos =
             m_gameWindow.mapPixelToCoords(mouseMoved->position);
-        m_menu.updateMouseHover(worldPos.x, worldPos.y, m_currentGameState);
+        if (m_menu.updateMouseHover(worldPos.x, worldPos.y,
+                                    m_currentGameState)) {
+          if (m_currentGameState != GameState::Controls)
+            m_menuSwitchSoundTimer = 0.08f;
+        }
 
       } else if (const auto *mouseClick =
                      event->getIf<sf::Event::MouseButtonPressed>()) {
@@ -291,7 +322,15 @@ void Game::run() {
       } else if (const auto *keyPressed =
                      event->getIf<sf::Event::KeyPressed>()) {
 
-        if (m_inputMode != InputMode::Gamepad) {
+        bool isNavKey = (keyPressed->code == sf::Keyboard::Key::Up ||
+                         keyPressed->code == sf::Keyboard::Key::Down ||
+                         keyPressed->code == sf::Keyboard::Key::Left ||
+                         keyPressed->code == sf::Keyboard::Key::Right ||
+                         keyPressed->code == sf::Keyboard::Key::W ||
+                         keyPressed->code == sf::Keyboard::Key::A ||
+                         keyPressed->code == sf::Keyboard::Key::S ||
+                         keyPressed->code == sf::Keyboard::Key::D);
+        if (isNavKey && m_inputMode != InputMode::Gamepad) {
           m_inputMode = InputMode::Gamepad;
           m_menu.setInputMode(InputMode::Gamepad);
           m_gameWindow.setMouseCursorVisible(false);
@@ -310,22 +349,26 @@ void Game::run() {
                              m_currentGameState == GameState::GameOver);
 
         if (isMenuScreen) {
+          bool focusChanged = false;
           if (keyPressed->code == sf::Keyboard::Key::Up ||
               keyPressed->code == sf::Keyboard::Key::W)
-            m_menu.moveFocus2D(0, -1, m_currentGameState);
+            focusChanged = m_menu.moveFocus2D(0, -1, m_currentGameState);
           else if (keyPressed->code == sf::Keyboard::Key::Down ||
                    keyPressed->code == sf::Keyboard::Key::S)
-            m_menu.moveFocus2D(0, 1, m_currentGameState);
+            focusChanged = m_menu.moveFocus2D(0, 1, m_currentGameState);
           else if (keyPressed->code == sf::Keyboard::Key::Left ||
                    keyPressed->code == sf::Keyboard::Key::A) {
             if (m_currentGameState == GameState::Settings ||
                 m_currentGameState == GameState::GameOver)
-              m_menu.moveFocus2D(-1, 0, m_currentGameState);
+              focusChanged = m_menu.moveFocus2D(-1, 0, m_currentGameState);
           } else if (keyPressed->code == sf::Keyboard::Key::Right ||
                      keyPressed->code == sf::Keyboard::Key::D) {
             if (m_currentGameState == GameState::Settings ||
                 m_currentGameState == GameState::GameOver)
-              m_menu.moveFocus2D(1, 0, m_currentGameState);
+              focusChanged = m_menu.moveFocus2D(1, 0, m_currentGameState);
+          }
+          if (focusChanged && m_currentGameState != GameState::Controls) {
+            m_menuSwitchSoundTimer = 0.08f;
           }
         }
 
@@ -340,6 +383,14 @@ void Game::run() {
             m_Episode3Music.setVolume(0);
             m_player.stopSound();
             m_boss.stopSound();
+            if (m_isPlayerDying) {
+              if (m_deathFizzSound.getStatus() == sf::Sound::Status::Playing)
+                m_deathFizzSound.pause();
+              if (m_deathSound.getStatus() == sf::Sound::Status::Playing)
+                m_deathSound.pause();
+              if (m_cookieSound.getStatus() == sf::Sound::Status::Playing)
+                m_cookieSound.pause();
+            }
           } else if (m_currentGameState == GameState::Paused) {
             m_currentGameState = GameState::Playing;
             m_menu.setupMenuButtons(m_currentGameState, currentW, currentH,
@@ -348,6 +399,14 @@ void Game::run() {
               m_Episode1Music.setVolume(30.0f);
               m_Episode2Music.setVolume(30.0f);
               m_Episode3Music.setVolume(45.0f);
+            }
+            if (m_isPlayerDying) {
+              if (m_deathFizzSound.getStatus() == sf::Sound::Status::Paused)
+                m_deathFizzSound.play();
+              if (m_deathSound.getStatus() == sf::Sound::Status::Paused)
+                m_deathSound.play();
+              if (m_cookieSound.getStatus() == sf::Sound::Status::Paused)
+                m_cookieSound.play();
             }
           } else if (m_currentGameState == GameState::Settings) {
             m_currentGameState = m_lastGameState;
@@ -360,12 +419,11 @@ void Game::run() {
             m_menu.setupMenuButtons(m_currentGameState, currentW, currentH,
                                     m_gameSettings, m_lastGameState);
           } else if (m_currentGameState == GameState::GameOver) {
-            m_currentGameState = GameState::MainMenu;
-            m_menu.resetFocus(GameState::MainMenu);
-            m_menu.setupMenuButtons(m_currentGameState, currentW, currentH,
-                                    m_gameSettings, m_lastGameState);
-            if (m_gameSettings.playMusic)
-              m_menu.updateMusicVolume(true);
+            if (!m_isFadingOut) {
+              m_isFadingOut = true;
+              m_fadeAlpha = 0.0f;
+              m_goToMenuAfterFade = true;
+            }
           }
         }
 
@@ -579,18 +637,22 @@ void Game::run() {
       float navRepeatDelay = 0.2f;
       if (anyNav && m_stickNavTimer >= navRepeatDelay) {
         m_stickNavTimer = 0.f;
+        bool focusChanged = false;
         if (navUp)
-          m_menu.moveFocus2D(0, -1, m_currentGameState);
+          focusChanged = m_menu.moveFocus2D(0, -1, m_currentGameState);
         else if (navDown)
-          m_menu.moveFocus2D(0, 1, m_currentGameState);
+          focusChanged = m_menu.moveFocus2D(0, 1, m_currentGameState);
         else if (navLeft) {
           if (m_currentGameState == GameState::Settings ||
               m_currentGameState == GameState::GameOver)
-            m_menu.moveFocus2D(-1, 0, m_currentGameState);
+            focusChanged = m_menu.moveFocus2D(-1, 0, m_currentGameState);
         } else if (navRight) {
           if (m_currentGameState == GameState::Settings ||
               m_currentGameState == GameState::GameOver)
-            m_menu.moveFocus2D(1, 0, m_currentGameState);
+            focusChanged = m_menu.moveFocus2D(1, 0, m_currentGameState);
+        }
+        if (focusChanged && m_currentGameState != GameState::Controls) {
+          m_menuSwitchSoundTimer = 0.08f;
         }
       }
       if (!anyNav)
@@ -684,6 +746,115 @@ void Game::run() {
           sf::Color(0, 0, 0, static_cast<int>(m_fadeAlpha)));
     }
 
+    if (m_isPlayerDying && m_currentGameState != GameState::Paused) {
+      m_deathAnimTimer += dt.asSeconds();
+      sf::Sprite &pSprite = m_player.getSprite();
+
+      if (m_Episode1Music.getVolume() > 0)
+        m_Episode1Music.setVolume(std::max(0.f, m_Episode1Music.getVolume() -
+                                                    dt.asSeconds() * 100.f));
+      if (m_Episode2Music.getVolume() > 0)
+        m_Episode2Music.setVolume(std::max(0.f, m_Episode2Music.getVolume() -
+                                                    dt.asSeconds() * 100.f));
+      if (m_Episode3Music.getVolume() > 0)
+        m_Episode3Music.setVolume(std::max(0.f, m_Episode3Music.getVolume() -
+                                                    dt.asSeconds() * 100.f));
+
+      if (m_deathAnimWhitePhase) {
+        if (m_deathFizzSound.getStatus() != sf::Sound::Status::Playing) {
+          m_deathAnimWhitePhase = false;
+          m_deathAnimLaunched = true;
+          pSprite.setColor(sf::Color::White);
+          pSprite.setPosition(m_deathAnimVelocity);
+
+          m_deathAnimVelocity.y = -600.0f;
+          float leftSpace = pSprite.getPosition().x - m_currentLeftWall;
+          float rightSpace =
+              (currentW - m_currentRightWall) - pSprite.getPosition().x;
+          m_deathAnimVelocity.x = (leftSpace > rightSpace) ? -200.0f : 200.0f;
+
+          setVibration(0.f, 0.f);
+          m_rumbleTimer = 0.f;
+        } else {
+          if (m_deathAnimTimer <= dt.asSeconds()) {
+            m_deathAnimVelocity = pSprite.getPosition();
+          }
+          float shakeX = std::sin(m_deathAnimTimer * 200.f) * 20.f +
+                         std::sin(m_deathAnimTimer * 137.f) * 15.f;
+          float shakeY = std::cos(m_deathAnimTimer * 180.f) * 20.f +
+                         std::cos(m_deathAnimTimer * 151.f) * 15.f;
+          pSprite.setPosition(sf::Vector2f(m_deathAnimVelocity.x + shakeX,
+                                           m_deathAnimVelocity.y + shakeY));
+          pSprite.setColor(
+              sf::Color(255, 255, 255, (rand() % 100 > 30) ? 255 : 150));
+        }
+      } else if (m_deathAnimLaunched) {
+        m_deathAnimVelocity.y += m_deathAnimGravity * dt.asSeconds();
+        pSprite.move(m_deathAnimVelocity * dt.asSeconds());
+
+        if (m_deathAnimBounceCount == 0) {
+          float spinDir = (m_deathAnimVelocity.x > 0) ? 1.0f : -1.0f;
+          pSprite.rotate(sf::degrees(spinDir * 800.0f * dt.asSeconds()));
+        }
+
+        float floorY = m_currentWindowSize.y - 120.0f;
+        if (pSprite.getPosition().y > floorY) {
+          pSprite.setPosition(sf::Vector2f(pSprite.getPosition().x, floorY));
+
+          float rot = pSprite.getRotation().asDegrees();
+          while (rot < 0.f)
+            rot += 360.f;
+          while (rot >= 360.f)
+            rot -= 360.f;
+          if (rot > 0.f && rot <= 180.f) {
+            pSprite.setRotation(sf::degrees(90.0f));
+          } else {
+            pSprite.setRotation(sf::degrees(270.0f));
+          }
+
+          if (m_deathAnimBounceCount == 0) {
+            m_deathSound.play();
+            m_deathAnimVelocity.y = -250.0f;
+            m_deathAnimVelocity.x *= 0.5f;
+            m_deathAnimBounceCount++;
+            setVibration(0.8f, 0.8f);
+            m_rumbleTimer = 0.1f;
+
+            m_currentGameState = GameState::GameOver;
+            m_menu.resetFocus(GameState::GameOver);
+            m_menu.setupMenuButtons(m_currentGameState, currentW, currentH,
+                                    m_gameSettings, m_lastGameState);
+            m_lastGameState = GameState::GameOver;
+          } else if (m_deathAnimBounceCount == 1) {
+            m_deathAnimVelocity.y = -120.0f;
+            m_deathAnimBounceCount++;
+            setVibration(0.5f, 0.5f);
+            m_rumbleTimer = 0.1f;
+          } else if (m_deathAnimBounceCount < 7) {
+            m_deathAnimVelocity.y = -60.0f;
+            m_deathAnimBounceCount++;
+            setVibration(0.2f, 0.2f);
+            m_rumbleTimer = 0.05f;
+          } else {
+            m_deathAnimLaunched = false;
+            m_deathAnimVelocity.x = pSprite.getPosition().x;
+          }
+        }
+      } else if (!m_deathAnimLaunched && !m_deathAnimWhitePhase) {
+        float t = std::fmod(m_deathAnimTimer, 3.0f);
+        if (t > 2.8f) {
+          float shakeX = ((std::rand() % 100) / 100.0f - 0.5f) * 10.0f;
+          float shakeY = ((std::rand() % 100) / 100.0f - 0.5f) * 10.0f;
+          pSprite.setPosition(
+              sf::Vector2f(m_deathAnimVelocity.x + shakeX,
+                           m_currentWindowSize.y - 120.0f + shakeY));
+        } else {
+          pSprite.setPosition(sf::Vector2f(m_deathAnimVelocity.x,
+                                           m_currentWindowSize.y - 120.0f));
+        }
+      }
+    }
+
     switch (m_currentGameState) {
     case GameState::Playing: {
 
@@ -719,9 +890,12 @@ void Game::run() {
 
       bool shouldPlayWallSound =
           (m_currentEpisode == GameEpisode::VendingMachine);
-      m_player.update(dt, currentW, currentH, m_currentLeftWall,
-                      m_currentRightWall, m_currentTopWall, m_WallPushBack,
-                      shouldPlayWallSound, static_cast<int>(m_currentEpisode));
+      if (!m_isPlayerDying) {
+        m_player.update(dt, currentW, currentH, m_currentLeftWall,
+                        m_currentRightWall, m_currentTopWall, m_WallPushBack,
+                        shouldPlayWallSound,
+                        static_cast<int>(m_currentEpisode));
+      }
 
       if (m_currentEpisode == GameEpisode::VendingMachine &&
           m_player.hasPlayerMoved() &&
@@ -745,22 +919,26 @@ void Game::run() {
 
       if (m_player.hasPlayerMoved() ||
           (m_currentEpisode != GameEpisode::VendingMachine &&
-           m_currentEpisodeTime > 0.0f)) {
+           m_currentEpisodeTime > 0.0f) ||
+          m_isPlayerDying) {
         m_enemySpawnTimer -= dt.asSeconds();
-        m_currentEpisodeTime += dt.asSeconds();
-        m_heartSpawnTimer += dt.asSeconds();
-        if ((m_gameSettings.gameDifficulty == GameDifficulty::Easy) &&
-            m_heartSpawnTimer >= 25.0f) {
-          spawnHeart();
-          m_heartSpawnTimer = 0.0f;
-        } else if ((m_gameSettings.gameDifficulty == GameDifficulty::Normal) &&
-                   m_heartSpawnTimer >= 20.0f) {
-          spawnHeart();
-          m_heartSpawnTimer = 0.0f;
-        } else if ((m_gameSettings.gameDifficulty == GameDifficulty::Hard) &&
-                   m_heartSpawnTimer >= 5.0f) {
-          spawnHeart();
-          m_heartSpawnTimer = 0.0f;
+        if (!m_isPlayerDying) {
+          m_currentEpisodeTime += dt.asSeconds();
+          m_heartSpawnTimer += dt.asSeconds();
+          if ((m_gameSettings.gameDifficulty == GameDifficulty::Easy) &&
+              m_heartSpawnTimer >= 25.0f) {
+            spawnHeart();
+            m_heartSpawnTimer = 0.0f;
+          } else if ((m_gameSettings.gameDifficulty ==
+                      GameDifficulty::Normal) &&
+                     m_heartSpawnTimer >= 20.0f) {
+            spawnHeart();
+            m_heartSpawnTimer = 0.0f;
+          } else if ((m_gameSettings.gameDifficulty == GameDifficulty::Hard) &&
+                     m_heartSpawnTimer >= 5.0f) {
+            spawnHeart();
+            m_heartSpawnTimer = 0.0f;
+          }
         }
 
         if (m_currentEpisode == GameEpisode::VendingMachine &&
@@ -801,8 +979,15 @@ void Game::run() {
         }
 
         if (m_currentEpisode == GameEpisode::BossFight) {
-          m_boss.update(dt, m_player.getPosition(), currentW, currentH,
-                        m_gameSettings);
+          for (auto &enemy : m_enemies) {
+            enemy.update(dt, currentW, currentH, m_currentLeftWall,
+                         m_currentRightWall, m_player.getPosition(),
+                         m_cookieSound);
+          }
+          if (!m_isPlayerDying) {
+            m_boss.update(dt, m_player.getPosition(), currentW, currentH,
+                          m_gameSettings);
+          }
           isHit = false;
 
           const auto &handleCircles = m_boss.getHandleHitboxes();
@@ -844,27 +1029,14 @@ void Game::run() {
             }
           }
           if (isHit) {
-            if (!victoryInvincibility) {
+            if (!victoryInvincibility && !m_player.isInvincible()) {
               m_player.loseHealth();
-              setVibration(0.6f, 0.4f);
-              m_rumbleTimer = 0.5f;
+              setVibration(0.4f, 0.4f);
+              m_rumbleTimer = 0.45f;
             }
 
             if (m_player.getHealth() <= 0) {
-              m_currentGameState = GameState::GameOver;
-              m_player.stopSound();
-              m_boss.stopSound();
-              m_deathSound.play();
-              m_menu.setupMenuButtons(m_currentGameState,
-                                      static_cast<float>(m_currentWindowSize.x),
-                                      static_cast<float>(m_currentWindowSize.y),
-                                      m_gameSettings, m_lastGameState);
-
-              m_Episode1Music.stop();
-              m_Episode2Music.stop();
-              m_Episode3Music.stop();
-
-              m_lastGameState = GameState::GameOver;
+              triggerPlayerDeath();
             }
           }
 
@@ -1043,10 +1215,14 @@ void Game::run() {
             }
           }
 
-          for (auto &enemy : m_enemies) {
-            enemy.update(dt, currentW, currentH, m_machineLeftWall,
-                         m_machineRightWall, m_player.getPosition(),
-                         m_cookieSound);
+          if (m_isPlayerDying && !m_deathAnimWhitePhase) {
+            m_cookieSound.stop();
+          } else {
+            for (auto &enemy : m_enemies) {
+              enemy.update(dt, currentW, currentH, m_machineLeftWall,
+                           m_machineRightWall, m_player.getPosition(),
+                           m_cookieSound);
+            }
           }
 
           for (auto it = m_enemies.begin(); it != m_enemies.end();) {
@@ -1116,20 +1292,14 @@ void Game::run() {
           break;
       }
 
-      if (isHit) {
-        if (!victoryInvincibility) {
+      if (isHit && !m_isPlayerDying) {
+        if (!victoryInvincibility && !m_player.isInvincible()) {
           m_player.loseHealth();
+          setVibration(0.4f, 0.4f);
+          m_rumbleTimer = 0.45f;
         }
         if (m_player.getHealth() <= 0) {
-          m_currentGameState = GameState::GameOver;
-          m_player.stopSound();
-          m_boss.stopSound();
-          m_deathSound.play();
-          m_menu.setupMenuButtons(m_currentGameState, currentW, currentH,
-                                  m_gameSettings, m_lastGameState);
-          m_Episode1Music.stop();
-          m_Episode2Music.stop();
-          m_lastGameState = GameState::GameOver;
+          triggerPlayerDeath();
         }
       }
 
@@ -1238,12 +1408,7 @@ void Game::run() {
     //! DRAW LOGIC
     m_gameWindow.clear(sf::Color::Black);
 
-    if (m_currentGameState == GameState::GameOver) {
-      m_player.stopSound();
-      m_boss.stopSound();
-      m_player.draw(m_gameWindow, m_gameSettings);
-      m_menu.draw(m_gameWindow, m_currentGameState);
-    } else if (m_currentGameState == GameState::Controls) {
+    if (m_currentGameState == GameState::Controls) {
       m_menu.draw(m_gameWindow, m_currentGameState);
     } else if (m_currentGameState == GameState::EpisodeTransition) {
       if (m_nextEpisode == GameEpisode::Victory) {
@@ -1257,27 +1422,145 @@ void Game::run() {
 
       if (m_currentGameState == GameState::Playing ||
           m_currentGameState == GameState::Paused ||
-          m_currentGameState == GameState::Settings) {
-        m_player.draw(m_gameWindow, m_gameSettings);
+          m_currentGameState == GameState::Settings ||
+          m_currentGameState == GameState::GameOver) {
         for (auto &enemy : m_enemies) {
           enemy.draw(m_gameWindow, m_gameSettings);
-        }
-        if (m_currentEpisode == GameEpisode::Survival &&
-            m_gameSettings.showHitbox == true) {
-          m_gameWindow.draw(m_slowSafeZoneRect);
         }
         if (m_currentEpisode == GameEpisode::BossFight) {
           m_boss.draw(m_gameWindow, m_gameSettings);
         }
+
+        if (m_isPlayerDying) {
+          uint8_t alpha = 0;
+          if (!m_deathAnimWhitePhase) {
+            alpha =
+                static_cast<uint8_t>(std::min(m_deathAnimTimer * 200.f, 255.f));
+          }
+          if (alpha > 0) {
+            sf::RectangleShape dimRect((sf::Vector2f)m_gameWindow.getSize());
+            dimRect.setFillColor(sf::Color(0, 0, 0, alpha));
+            m_gameWindow.draw(dimRect);
+          }
+        }
+
+        if (m_currentEpisode == GameEpisode::Survival &&
+            m_gameSettings.showHitbox == true) {
+          m_gameWindow.draw(m_slowSafeZoneRect);
+        }
+
         for (auto &heart : m_hearts) {
           m_gameWindow.draw(heart.healSprite);
+        }
+
+        if (m_isPlayerDying && m_deathAnimWhitePhase) {
+          sf::Vector2f center = m_deathAnimVelocity;
+          float rayShakeX = ((rand() % 100) / 100.0f - 0.5f) * 15.0f;
+          float rayShakeY = ((rand() % 100) / 100.0f - 0.5f) * 15.0f;
+          center.x += rayShakeX;
+          center.y += rayShakeY;
+
+          float totalFizzTime =
+              m_deathFizzSoundBuffer.getDuration().asSeconds();
+          float progress = std::min(m_deathAnimTimer / totalFizzTime, 1.0f);
+
+          sf::Sprite whiteJar = m_player.getSprite();
+          uint8_t alpha = static_cast<uint8_t>(progress * 255.f);
+          whiteJar.setColor(sf::Color(255, 255, 255, alpha));
+          m_gameWindow.draw(whiteJar, sf::BlendAdd);
+          m_gameWindow.draw(whiteJar, sf::BlendAdd);
+          m_gameWindow.draw(whiteJar, sf::BlendAdd);
+
+          float blinkFactor = (std::sin(m_deathAnimTimer * 5.f) + 1.f) * 0.5f;
+          uint8_t blueComp = static_cast<uint8_t>(100.f + blinkFactor * 155.f);
+          sf::Color effectColor(255, 255, blueComp, 180);
+
+          float maxRadius = 10.f + progress * progress * 400.f;
+          float currentRadius = maxRadius;
+          sf::CircleShape circle(currentRadius);
+          circle.setOrigin(sf::Vector2f(currentRadius, currentRadius));
+          circle.setPosition(center);
+          circle.setFillColor(effectColor);
+          m_gameWindow.draw(circle);
+
+          float rayLength = std::min(m_deathAnimTimer * 2857.f, 2000.f) +
+                            progress * progress * 200.f;
+          float rayThickness = 40.f + progress * progress * 450.f;
+
+          sf::ConvexShape ray(5);
+          float arrowHead = std::min(rayThickness * 1.5f, rayLength * 0.8f);
+          ray.setPoint(0, sf::Vector2f(0, -rayThickness / 2.f));
+          ray.setPoint(
+              1, sf::Vector2f(rayLength - arrowHead, -rayThickness / 2.f));
+          ray.setPoint(2, sf::Vector2f(rayLength, 0));
+          ray.setPoint(3,
+                       sf::Vector2f(rayLength - arrowHead, rayThickness / 2.f));
+          ray.setPoint(4, sf::Vector2f(0, rayThickness / 2.f));
+
+          ray.setFillColor(effectColor);
+          ray.setPosition(center);
+
+          sf::ConvexShape sideRay = ray;
+          sf::Color sideColor = effectColor;
+          sideColor.a = 120;
+          sideRay.setFillColor(sideColor);
+          sideRay.setPosition(center);
+
+          for (int i = 0; i < 8; i++) {
+            ray.setRotation(sf::degrees(i * 45.f + m_deathAnimTimer * 120.f));
+            m_gameWindow.draw(ray);
+
+            sideRay.setRotation(
+                sf::degrees(i * 45.f + 22.5f - m_deathAnimTimer * 80.f));
+            m_gameWindow.draw(sideRay);
+          }
+        }
+        m_player.draw(m_gameWindow, m_gameSettings);
+
+        if (m_isPlayerDying && m_deathAnimWhitePhase) {
+          float totalFizzTime =
+              m_deathFizzSoundBuffer.getDuration().asSeconds();
+          float progress = std::min(m_deathAnimTimer / totalFizzTime, 1.0f);
+          sf::Sprite whiteJar = m_player.getSprite();
+          uint8_t alpha = static_cast<uint8_t>(progress * 255.f);
+          whiteJar.setColor(sf::Color(255, 255, 255, alpha));
+          m_gameWindow.draw(whiteJar, sf::BlendAdd);
         }
       }
 
       if (m_currentGameState == GameState::Paused ||
           m_currentGameState == GameState::MainMenu ||
-          m_currentGameState == GameState::Settings) {
+          m_currentGameState == GameState::Settings ||
+          m_currentGameState == GameState::GameOver) {
+
+        sf::View oldView = m_gameWindow.getView();
+        if (m_currentGameState == GameState::GameOver) {
+          m_gameOverAnimTimer += dt.asSeconds();
+          float t = std::min(m_gameOverAnimTimer * 1.5f, 1.0f);
+          float scale = 1.0f;
+          if (t < 1.0f) {
+            scale =
+                std::pow(2.0f, -10.0f * t) *
+                    std::sin((t * 10.0f - 0.75f) * ((2.0f * 3.14159f) / 3.0f)) +
+                1.0f;
+            scale = std::max(0.01f, scale);
+          }
+          uint8_t alpha =
+              static_cast<uint8_t>(std::min(t * 1.5f, 1.0f) * 255.f);
+          m_menu.setGlobalAlpha(alpha);
+
+          sf::View menuView = m_gameWindow.getDefaultView();
+          menuView.zoom(1.f / scale);
+          m_gameWindow.setView(menuView);
+        } else {
+          m_menu.setGlobalAlpha(255);
+        }
+
         m_menu.draw(m_gameWindow, m_currentGameState);
+
+        if (m_currentGameState == GameState::GameOver) {
+          m_gameWindow.setView(oldView);
+        }
       }
       if (!m_fpsFontIsLoaded)
         m_gameWindow.draw(m_fpsErrorRect);
@@ -1322,8 +1605,29 @@ void Game::spawnHeart() {
   m_hearts.push_back(heart);
 }
 
+void Game::triggerPlayerDeath() {
+  m_isPlayerDying = true;
+  m_player.prepareForDeathAnim();
+  m_boss.stopSound();
+
+  if (m_deathFizzSound.getStatus() != sf::Sound::Status::Playing)
+    m_deathFizzSound.play();
+
+  updateSfxVolume(m_gameSettings.playSfx);
+
+  m_deathAnimTimer = 0.0f;
+  m_gameOverAnimTimer = 0.0f;
+  m_deathAnimBounceCount = 0;
+  m_deathAnimLaunched = false;
+  m_deathAnimWhitePhase = true;
+  m_rumbleTimer = 999.0f;
+  setVibration(0.2f, 0.2f);
+}
+
 void Game::startNewGame(bool useTransition) {
   GameEpisode startingEpisode = GameEpisode::VendingMachine;
+  m_isPlayerDying = false;
+  updateSfxVolume(m_gameSettings.playSfx);
 
   setupEpisode(startingEpisode);
   int difficultyHP = 3;
@@ -1382,11 +1686,9 @@ void Game::setupEpisode(GameEpisode episode) {
     m_currentTopWall = m_machineTopWall;
     m_WallPushBack = 15.0f;
     m_currentEpisodeTime = 0.0f;
-    // !
     m_episodeDuration = 55.0f;
-    // !
 
-    if (!m_bgTexture.loadFromFile("assets/images/Episode_1.jpg"))
+    if (!m_bgTexture.loadFromFile("assets/images/episode_1.jpg"))
       std::cerr << "Error bg" << std::endl;
     m_currentEnemyTextures.clear();
 
@@ -1398,9 +1700,7 @@ void Game::setupEpisode(GameEpisode episode) {
     m_currentRightWall = 0.0f;
     m_currentTopWall = 0.0f;
     m_WallPushBack = 0.0f;
-    // !
     m_episodeDuration = 120.0f;
-    // !
     m_slowZone.size.x = m_currentWindowSize.x;
     m_slowZone.size.y = m_currentWindowSize.y;
     m_slowSafeZone.size.x = m_currentWindowSize.x / 1.7;
@@ -1425,8 +1725,8 @@ void Game::setupEpisode(GameEpisode episode) {
     m_player.startNextEpisode(m_currentWindowSize.x / 2.0f,
                               m_currentWindowSize.y / 2.0f);
 
-    if (!m_bgTexture.loadFromFile("assets/images/Episode_2.png"))
-      std::cerr << "Error bg" << std::endl;
+    if (!m_bgTexture.loadFromFile("assets/images/episode_2.png"))
+      std::cerr << "Failed to load episode 2 background!" << std::endl;
     break;
   }
   case GameEpisode::Victory:
@@ -1446,8 +1746,8 @@ void Game::setupEpisode(GameEpisode episode) {
 
     m_boss.spawn(m_currentWindowSize.x / 2.0f, -500.0f, m_gameSettings);
 
-    if (!m_bgTexture.loadFromFile("assets/images/Episode_3.png"))
-      std::cerr << "Error bg" << std::endl;
+    if (!m_bgTexture.loadFromFile("assets/images/episode_3.png"))
+      std::cerr << "Failed to load episode 3 background!" << std::endl;
   } break;
   }
   m_bgSprite.setTexture(m_bgTexture, true);
@@ -1737,7 +2037,29 @@ void Game::handleMenuAction(int actionId, float currentW, float currentH) {
     m_menu.resetFocus(GameState::Controls);
     m_menu.setupMenuButtons(m_currentGameState, currentW, currentH,
                             m_gameSettings, m_lastGameState);
+  } else if (actionId == 12) {
+    m_gameSettings.playSfx = !m_gameSettings.playSfx;
+    updateSfxVolume(m_gameSettings.playSfx);
+    m_player.updateSfxVolume(m_gameSettings.playSfx);
+    m_boss.updateSfxVolume(m_gameSettings.playSfx);
+    m_menu.setupMenuButtons(m_currentGameState, currentW, currentH,
+                            m_gameSettings, m_lastGameState);
   }
+}
+
+void Game::updateSfxVolume(bool playSfx) {
+  float enemyMult = m_isPlayerDying ? 0.25f : 1.0f;
+  m_cookieSound.setVolume(playSfx ? AudioConfig::COOKIE * enemyMult : 0.f);
+  m_menuButtonSound.setVolume(playSfx ? AudioConfig::BUTTON_SELECT : 0.f);
+  m_menuSwitchSound.setVolume(playSfx ? AudioConfig::BUTTON_SWITCH : 0.f);
+  m_transitionSound.setVolume(playSfx ? AudioConfig::TRANSITION : 0.f);
+  m_winSound.setVolume(playSfx ? AudioConfig::WIN_SOUND : 0.f);
+  m_deathSound.setVolume(playSfx ? AudioConfig::DEATH : 0.f);
+  m_deathFizzSound.setVolume(playSfx ? AudioConfig::DEATH_FIZZ : 0.f);
+  m_healSound.setVolume(playSfx ? AudioConfig::HEAL : 0.f);
+  m_heartSpawnSound.setVolume(playSfx ? AudioConfig::HEART_SPAWN : 0.f);
+  m_gameLoadingSound.setVolume(playSfx ? AudioConfig::GAME_LOADING : 0.f);
+  m_gameStartSound.setVolume(playSfx ? AudioConfig::GAME_START : 0.f);
 }
 
 //? setVibration -> XInput rumble (Windows only)

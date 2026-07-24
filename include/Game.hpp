@@ -76,6 +76,9 @@ private:
   float m_WallPushBack;
   sf::SoundBuffer m_menuButtonSoundBuffer;
   sf::Sound m_menuButtonSound;
+  sf::SoundBuffer m_menuSwitchSoundBuffer;
+  sf::Sound m_menuSwitchSound;
+  float m_menuSwitchSoundTimer = 0.0f;
   sf::SoundBuffer m_Episode1MusicBuffer;
   sf::Sound m_Episode1Music;
   sf::SoundBuffer m_Episode2MusicBuffer;
@@ -108,6 +111,7 @@ private:
   float m_transitionTimer;
   GameEpisode m_nextEpisode;
   void startTransition(GameEpisode nextEpisode);
+  void updateSfxVolume(bool playSfx);
   sf::RectangleShape m_fadeRect;
   float m_fadeAlpha;
   bool m_isFadingOut;
@@ -143,6 +147,19 @@ private:
   void setVibration(float left, float right);
   float m_rumbleTimer = 0.f;
   bool m_bossRumbleActive = false;
+  
+  //* Player Death Animation State
+  sf::SoundBuffer m_deathFizzSoundBuffer;
+  sf::Sound m_deathFizzSound;
+  float m_deathAnimTimer = 0.f;
+  float m_gameOverAnimTimer = 0.f;
+  sf::Vector2f m_deathAnimVelocity;
+  float m_deathAnimGravity = 1500.0f;
+  int m_deathAnimBounceCount = 0;
+  bool m_deathAnimLaunched = false;
+  bool m_deathAnimWhitePhase = false;
+  bool m_isPlayerDying = false;
+  void triggerPlayerDeath();
 
   //? Helper to execute a menu action ID (reused for both mouse and
   //? keyboard/pad)

@@ -32,6 +32,7 @@ public:
 	void draw(sf::RenderWindow &window, const GameSettings &settings);
 	void stopSound();
 	void playRicochetSound();
+	void updateSfxVolume(bool playSfx, float multiplier = 1.0f);
 
 	const std::vector<CollisionCircle> &getHandleHitboxes();
 	const std::vector<CollisionCircle> &getBrushHitboxes();

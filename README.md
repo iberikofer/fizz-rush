@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD033 -->
 # 🚀 Fizz Rush
 
 ![C++](https://img.shields.io/badge/C++-17-red?logo=c%2B%2B&logoColor=white) ![SFML](https://img.shields.io/badge/Library-SFML_3.0.2-yellow) ![Platform](https://img.shields.io/badge/Platform-Windows-0078D6?logo=windows&logoColor=white) ![Episodes](https://img.shields.io/badge/Episodes-3-purple) ![Build](https://img.shields.io/badge/Build-Passing-brightgreen)
@@ -125,6 +126,10 @@ This project was developed strictly for educational and academic purposes during
 - Sound Effect by [freesound_community](https://pixabay.com/ru/users/freesound_community-46691455/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=80047) from Pixabay
 - Sound Effect by [freesound_community](https://pixabay.com/ru/users/freesound_community-46691455/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=101422) from Pixabay
 - Sound Effect by [freesound_community](https://pixabay.com/ru/users/freesound_community-46691455/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=101553) from Pixabay
+- Sound Effect by <a href="https://pixabay.com/ru/users/emilianodleon-41744987/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=395762">Emiliano Dleon</a> from <a href="https://pixabay.com/sound-effects//?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=395762">Pixabay</a>
+- Sound Effect by <a href="https://pixabay.com/users/universfield-28281460/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=229312">Universfield</a> from <a href="https://pixabay.com//?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=229312">Pixabay</a>
+- Sound Effect by <a href="https://pixabay.com/ru/users/lordsonny-38439655/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=194554">LordSonny</a> from <a href="https://pixabay.com/sound-effects//?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=194554">Pixabay</a>
+- Sound Effect by <a href="https://pixabay.com/ru/users/freesound_community-46691455/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=87403">freesound_community</a> from <a href="https://pixabay.com/sound-effects//?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=87403">Pixabay</a>
 
 </details>
 
@@ -253,6 +258,10 @@ Fizz Rush підтримує як клавіатуру, так і геймпад
 - Sound Effect by [freesound_community](https://pixabay.com/ru/users/freesound_community-46691455/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=80047) from Pixabay
 - Sound Effect by [freesound_community](https://pixabay.com/ru/users/freesound_community-46691455/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=101422) from Pixabay
 - Sound Effect by [freesound_community](https://pixabay.com/ru/users/freesound_community-46691455/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=101553) from Pixabay
+- Sound Effect by [Emiliano Dleon](https://pixabay.com/ru/users/emilianodleon-41744987/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=395762) from [Pixabay](https://pixabay.com/sound-effects//?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=395762)
+- Sound Effect by [Universfield](https://pixabay.com/users/universfield-28281460/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=229312) from [Pixabay](https://pixabay.com//?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=229312)
+- Sound Effect by [LordSonny](https://pixabay.com/ru/users/lordsonny-38439655/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=194554) from [Pixabay](https://pixabay.com/sound-effects//?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=194554)
+- Sound Effect by [freesound_community](https://pixabay.com/ru/users/freesound_community-46691455/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=87403) from [Pixabay](https://pixabay.com/sound-effects//?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=87403)
 
 </details>
 

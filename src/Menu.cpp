@@ -17,6 +17,7 @@ Menu::Menu(float winWidth, float winHeight)
       m_languageValueText(m_menuFont), m_controlsButtonText(m_menuFont),
       m_backButtonText(m_menuFont), m_controlsTitle(m_menuFont),
       m_controlsContent(m_menuFont), m_controlsBackText(m_menuFont),
+      m_sfxText(m_menuFont), m_sfxValueText(m_menuFont),
       m_menuMusic(m_menuMusicBuffer) {
   m_playButtonText.setCharacterSize(60);
   m_playButtonText.setFillColor(sf::Color(255, 220, 0));
@@ -35,7 +36,7 @@ Menu::Menu(float winWidth, float winHeight)
 
   m_menuMusic.setLooping(true);
   m_isDifficultyLocked = false;
-  m_menuMusic.setVolume(40.0f);
+  m_menuMusic.setVolume(AudioConfig::MENU_MUSIC);
 }
 
 //* Assets
@@ -62,7 +63,7 @@ void Menu::loadAssets(float winWidth, float winHeight) {
 //* Music helpers
 void Menu::updateMusicVolume(bool isPlaying) {
   if (isPlaying) {
-    m_menuMusic.setVolume(40.0f);
+    m_menuMusic.setVolume(AudioConfig::MENU_MUSIC);
     if (m_menuMusic.getStatus() != sf::Sound::Status::Playing)
       m_menuMusic.play();
   } else {
@@ -100,9 +101,9 @@ int Menu::buttonCount(GameState state) const {
   if (state == GameState::GameOver)
     return 2;
   //? Settings: Language(0), Difficulty(1), VSync(2), Music(3), ShowFPS(4),
-  //Hitbox(5), Controls(6), Back(7)
+  // Hitbox(5), Dummy(6->7), Back(7->8)
   if (state == GameState::Settings)
-    return 8;
+    return 9;
   if (state == GameState::Controls)
     return 1;
   return 0;
@@ -121,48 +122,46 @@ void Menu::syncFocusFromHover(GameState state) {
   }
 }
 
-void Menu::moveFocus2D(int dx, int dy, GameState state) {
+bool Menu::moveFocus2D(int dx, int dy, GameState state) {
+  int oldIndex = m_focusedButtonIndex;
   int count = buttonCount(state);
   if (count == 0)
-    return;
+    return false;
 
   if (state == GameState::Settings) {
     if (dx != 0) {
       if (m_focusedButtonIndex < 4) {
         m_focusedButtonIndex += 4;
-        if (m_focusedButtonIndex > 7)
-          m_focusedButtonIndex = 7;
-      } else {
+      } else if (m_focusedButtonIndex >= 4 && m_focusedButtonIndex < 8) {
         m_focusedButtonIndex -= 4;
-        if (m_focusedButtonIndex < 0)
-          m_focusedButtonIndex = 0;
       }
     }
     if (dy != 0) {
-      if (dy < 0) {
-        if (m_focusedButtonIndex == 0)
-          m_focusedButtonIndex = 3;
-        else if (m_focusedButtonIndex == 4)
-          m_focusedButtonIndex = 7;
-        else if (m_focusedButtonIndex == 7)
-          m_focusedButtonIndex = 6;
-        else
+      if (dy < 0) { // UP
+        if (m_focusedButtonIndex == 0 || m_focusedButtonIndex == 4) {
+          m_lastSettingsColumn = (m_focusedButtonIndex == 0) ? 0 : 1;
+          m_focusedButtonIndex = 8;
+        } else if (m_focusedButtonIndex == 8) {
+          m_focusedButtonIndex = (m_lastSettingsColumn == 0) ? 3 : 7;
+        } else {
           m_focusedButtonIndex--;
-      } else {
-        if (m_focusedButtonIndex == 3)
-          m_focusedButtonIndex = 0;
-        else if (m_focusedButtonIndex == 6)
-          m_focusedButtonIndex = 7;
-        else if (m_focusedButtonIndex == 7)
-          m_focusedButtonIndex = 4;
-        else
+        }
+      } else { // DOWN
+        if (m_focusedButtonIndex == 3 || m_focusedButtonIndex == 7) {
+          m_lastSettingsColumn = (m_focusedButtonIndex == 3) ? 0 : 1;
+          m_focusedButtonIndex = 8;
+        } else if (m_focusedButtonIndex == 8) {
+          m_focusedButtonIndex = (m_lastSettingsColumn == 0) ? 0 : 4;
+        } else {
           m_focusedButtonIndex++;
+        }
       }
     }
   } else {
     int dir = dy != 0 ? dy : dx;
     m_focusedButtonIndex = (m_focusedButtonIndex + dir + count) % count;
   }
+  return m_focusedButtonIndex != oldIndex;
 }
 
 //? Maps focused index → button action ID
@@ -180,8 +179,8 @@ int Menu::getFocusedButtonClickType(GameState state) {
   }
   if (state == GameState::Settings) {
     //? Language(0)→10, Controls(1)→11, Difficulty(2)→3, VSync(3)→5, Music(4)→4,
-    //FPS(5)→6, Hitbox(6)→7, Back(7)→8
-    int ids[] = {10, 11, 3, 5, 4, 6, 7, 8};
+    // SFX(5)→12, FPS(6)→6, Hitbox(7)→7, Back(8)→8
+    int ids[] = {10, 11, 3, 5, 4, 12, 6, 7, 8};
     if (m_focusedButtonIndex == 2 && m_isDifficultyLocked)
       return 0;
     return ids[m_focusedButtonIndex];
@@ -206,11 +205,11 @@ sf::Vector2f Menu::getButtonPosition(int index, GameState state) {
       return btns[index]->getPosition();
   }
   if (state == GameState::Settings) {
-    sf::RectangleShape *btns[] = {&m_languageButton,   &m_controlsButton,
-                                  &m_difficultyButton, &m_vsyncButton,
-                                  &m_musicButton,      &m_FPSCounterButton,
-                                  &m_hitboxButton,     &m_backButton};
-    if (index >= 0 && index < 8)
+    sf::RectangleShape *btns[] = {
+        &m_languageButton,   &m_controlsButton, &m_difficultyButton,
+        &m_vsyncButton,      &m_musicButton,    &m_sfxButton,
+        &m_FPSCounterButton, &m_hitboxButton,   &m_backButton};
+    if (index >= 0 && index < 9)
       return btns[index]->getPosition();
   }
   if (state == GameState::Controls) {
@@ -219,7 +218,8 @@ sf::Vector2f Menu::getButtonPosition(int index, GameState state) {
   return {0.f, 0.f};
 }
 
-void Menu::updateMouseHover(float x, float y, GameState state) {
+bool Menu::updateMouseHover(float x, float y, GameState state) {
+  int oldHover = m_hoveredButtonIndex;
   m_hoveredButtonIndex = -1;
   sf::Vector2f pos(x, y);
 
@@ -241,12 +241,14 @@ void Menu::updateMouseHover(float x, float y, GameState state) {
     check(m_difficultyButton, 2);
     check(m_vsyncButton, 3);
     check(m_musicButton, 4);
-    check(m_FPSCounterButton, 5);
-    check(m_hitboxButton, 6);
-    check(m_backButton, 7);
+    check(m_sfxButton, 5);
+    check(m_FPSCounterButton, 6);
+    check(m_hitboxButton, 7);
+    check(m_backButton, 8);
   } else if (state == GameState::Controls) {
     check(m_controlsBackButton, 0);
   }
+  return m_hoveredButtonIndex != oldHover && m_hoveredButtonIndex != -1;
 }
 
 //? Helper: apply yellow pulsing or white normal outline
@@ -300,10 +302,13 @@ void Menu::applyFocusOutline(sf::RectangleShape &btn, bool active,
     outColor.b = static_cast<uint8_t>(
         outColor.b + hoverFactor * (activeColor.b - outColor.b));
     outColor.a = static_cast<uint8_t>(
-        outColor.a + hoverFactor * (activeColor.a - outColor.a));
+        (uint8_t)(outColor.a + hoverFactor * (activeColor.a - outColor.a)) *
+        m_globalAlpha / 255);
 
     thickness = thickness + hoverFactor * (activeThickness - thickness);
     scale = scale + hoverFactor * (activeScale - scale);
+  } else {
+    outColor.a = (uint8_t)(outColor.a * m_globalAlpha / 255);
   }
 
   if (pressFactor > 0.0f) {
@@ -318,7 +323,8 @@ void Menu::applyFocusOutline(sf::RectangleShape &btn, bool active,
     outColor.b = static_cast<uint8_t>(
         outColor.b + pressFactor * (pressColor.b - outColor.b));
     outColor.a = static_cast<uint8_t>(
-        outColor.a + pressFactor * (pressColor.a - outColor.a));
+        (uint8_t)(outColor.a + pressFactor * (pressColor.a - outColor.a)) *
+        m_globalAlpha / 255);
 
     thickness = thickness + pressFactor * (pThickness - thickness);
     scale = scale + pressFactor * (pScale - scale);
@@ -352,6 +358,8 @@ void Menu::setupMenuButtons(GameState m_gameState, float winWidth,
   m_FPSCounterValueText.setFont(activeFont);
   m_hitboxText.setFont(activeFont);
   m_hitboxValueText.setFont(activeFont);
+  m_sfxText.setFont(activeFont);
+  m_sfxValueText.setFont(activeFont);
   m_languageText.setFont(activeFont);
   m_languageValueText.setFont(activeFont);
   m_controlsButtonText.setFont(activeFont);
@@ -475,10 +483,10 @@ void Menu::setupMenuButtons(GameState m_gameState, float winWidth,
       m_menuMusic.stop();
     }
 
-    float uniformWidth = ua ? 720.0f : 550.0f;
+    float uniformWidth = ua ? 820.0f : 550.0f;
 
     //* 2-Column layout
-    float startY = winHeight / 2.0f - 200.0f;
+    float startY = winHeight / 2.0f - 140.0f;
     float gap = 120.0f;
     float yRow0 = startY + gap * 0;
     float yRow1 = startY + gap * 1;
@@ -486,8 +494,8 @@ void Menu::setupMenuButtons(GameState m_gameState, float winWidth,
     float yRow3 = startY + gap * 3;
     float yBack = startY + gap * 4.2f;
 
-    float leftX = winWidth / 2.0f - (ua ? 380.0f : 340.0f);
-    float rightX = winWidth / 2.0f + (ua ? 380.0f : 340.0f);
+    float leftX = winWidth / 2.0f - (ua ? 430.0f : 340.0f);
+    float rightX = winWidth / 2.0f + (ua ? 430.0f : 340.0f);
 
     auto makeSettingsBtn = [&](sf::RectangleShape &btn, float cx, float cy,
                                bool isLocked = false) {
@@ -590,6 +598,27 @@ void Menu::setupMenuButtons(GameState m_gameState, float winWidth,
     alignTexts(m_musicText, m_musicValueText, rightX, yRow0);
     makeSettingsBtn(m_musicButton, rightX, yRow0);
 
+    //* SFX
+    m_sfxText.setString(ua ? U"\u0417\u0432\u0443\u043a\u0438" : U"SOUND");
+    m_sfxValueText.setString(
+        sf::String(U": ") +
+        (settings.playSfx
+             ? (ua ? U"\u0423\u0412\u0406\u041c\u041a\u041d\u0415\u041d\u041e"
+                   : U"ON")
+             : (ua ? U"\u0412\u0418\u041c\u041a\u041d\u0415\u041d\u041e"
+                   : U"OFF")));
+    sf::Color sfxColor = settings.playSfx ? sf::Color::Green : sf::Color::Red;
+    m_sfxText.setCharacterSize(50);
+    m_sfxText.setFillColor(sfxColor);
+    m_sfxText.setOutlineColor(sf::Color::Black);
+    m_sfxText.setOutlineThickness(3.f);
+    m_sfxValueText.setCharacterSize(50);
+    m_sfxValueText.setFillColor(sfxColor);
+    m_sfxValueText.setOutlineColor(sf::Color::Black);
+    m_sfxValueText.setOutlineThickness(3.f);
+    alignTexts(m_sfxText, m_sfxValueText, rightX, yRow1);
+    makeSettingsBtn(m_sfxButton, rightX, yRow1);
+
     //* FPS
     m_FPSCounterText.setString(
         ua ? U"\u041f\u043e\u043a\u0430\u0437\u0430\u0442\u0438 FPS"
@@ -610,8 +639,8 @@ void Menu::setupMenuButtons(GameState m_gameState, float winWidth,
     m_FPSCounterValueText.setFillColor(fpsColor);
     m_FPSCounterValueText.setOutlineColor(sf::Color::Black);
     m_FPSCounterValueText.setOutlineThickness(3.f);
-    alignTexts(m_FPSCounterText, m_FPSCounterValueText, rightX, yRow1);
-    makeSettingsBtn(m_FPSCounterButton, rightX, yRow1);
+    alignTexts(m_FPSCounterText, m_FPSCounterValueText, rightX, yRow2);
+    makeSettingsBtn(m_FPSCounterButton, rightX, yRow2);
 
     //* Hitbox
     m_hitboxText.setString(
@@ -634,8 +663,8 @@ void Menu::setupMenuButtons(GameState m_gameState, float winWidth,
     m_hitboxValueText.setFillColor(hitboxColor);
     m_hitboxValueText.setOutlineColor(sf::Color::Black);
     m_hitboxValueText.setOutlineThickness(3.f);
-    alignTexts(m_hitboxText, m_hitboxValueText, rightX, yRow2);
-    makeSettingsBtn(m_hitboxButton, rightX, yRow2);
+    alignTexts(m_hitboxText, m_hitboxValueText, rightX, yRow3);
+    makeSettingsBtn(m_hitboxButton, rightX, yRow3);
 
     //* Controls button
     m_controlsButtonText.setString(
@@ -674,7 +703,7 @@ void Menu::setupMenuButtons(GameState m_gameState, float winWidth,
   }
 
   if (m_gameState == GameState::GameOver) {
-    m_menuBG.setFillColor(sf::Color(0, 0, 0, 255));
+    m_menuBG.setFillColor(sf::Color::Transparent);
     m_gameNameLogo.setString(
         ua ? U"\u0412\u0410\u041c \u0413\u0410\u041f\u041b\u0418\u041a :("
            : U"GAME OVER :(");
@@ -856,6 +885,8 @@ int Menu::mouseClickPos(float mouseX, float mouseY, GameState m_gameState,
       return 6;
     if (m_hitboxButton.getGlobalBounds().contains(pos))
       return 7;
+    if (m_sfxButton.getGlobalBounds().contains(pos))
+      return 12;
     if (m_backButton.getGlobalBounds().contains(pos))
       return 8;
     return 0;
@@ -887,7 +918,7 @@ void Menu::draw(sf::RenderWindow &window, GameState m_gameState) {
     window.draw(m_menuBGSprite);
 
   //? Determine which button index is "active" (hover trumps focus in Mouse
-  //mode)
+  //? mode)
   int activeIdx = -1;
   if (m_inputMode == InputMode::Mouse)
     activeIdx = m_hoveredButtonIndex;
@@ -896,26 +927,66 @@ void Menu::draw(sf::RenderWindow &window, GameState m_gameState) {
 
   bool isPressed = false;
   if (m_inputMode == InputMode::Mouse) {
-    isPressed = sf::Mouse::isButtonPressed(sf::Mouse::Button::Left);
+    isPressed = window.hasFocus() &&
+                sf::Mouse::isButtonPressed(sf::Mouse::Button::Left);
   } else {
-    isPressed = sf::Joystick::isButtonPressed(0, 0) ||
-                sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Enter);
+    isPressed = window.hasFocus() &&
+                (sf::Joystick::isButtonPressed(0, 0) ||
+                 sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Enter));
   }
 
   auto drawBtn = [&](sf::RectangleShape &btn, bool isActive,
                      bool isBtnPressed) {
     applyFocusOutline(btn, isActive, isBtnPressed);
+
+    sf::Color origFill = btn.getFillColor();
+    sf::Color fill = origFill;
+    fill.a = static_cast<uint8_t>((fill.a * m_globalAlpha) / 255);
+    btn.setFillColor(fill);
+
+    sf::Color origOut = btn.getOutlineColor();
+    sf::Color out = origOut;
+    out.a = static_cast<uint8_t>((out.a * m_globalAlpha) / 255);
+    btn.setOutlineColor(out);
+
     window.draw(btn);
     if (isActive && isBtnPressed) {
       sf::RectangleShape overlay = btn;
-      overlay.setFillColor(sf::Color(0, 0, 0, 100)); //* Darken background
+      overlay.setFillColor(
+          sf::Color(0, 0, 0, (uint8_t)(100 * m_globalAlpha / 255)));
       overlay.setOutlineColor(sf::Color::Transparent);
       window.draw(overlay);
     }
+
+    btn.setFillColor(origFill);
+    btn.setOutlineColor(origOut);
   };
 
   auto drawBtnText = [&](const sf::RectangleShape &btn, sf::Text &t1,
                          sf::Text *t2 = nullptr) {
+    sf::Color origC1 = t1.getFillColor();
+    sf::Color c1 = origC1;
+    c1.a = static_cast<uint8_t>((c1.a * m_globalAlpha) / 255);
+    t1.setFillColor(c1);
+
+    sf::Color origOc1 = t1.getOutlineColor();
+    sf::Color oc1 = origOc1;
+    oc1.a = static_cast<uint8_t>((oc1.a * m_globalAlpha) / 255);
+    t1.setOutlineColor(oc1);
+
+    sf::Color origC2, origOc2;
+    if (t2) {
+      origC2 = t2->getFillColor();
+      sf::Color c2 = origC2;
+      c2.a = static_cast<uint8_t>((c2.a * m_globalAlpha) / 255);
+      t2->setFillColor(c2);
+
+      origOc2 = t2->getOutlineColor();
+      sf::Color oc2 = origOc2;
+      oc2.a = static_cast<uint8_t>((oc2.a * m_globalAlpha) / 255);
+      t2->setOutlineColor(oc2);
+    }
+
     sf::Vector2f pos = btn.getPosition();
     sf::Vector2f s = btn.getScale();
     sf::RenderStates states;
@@ -923,6 +994,13 @@ void Menu::draw(sf::RenderWindow &window, GameState m_gameState) {
     window.draw(t1, states);
     if (t2)
       window.draw(*t2, states);
+
+    t1.setFillColor(origC1);
+    t1.setOutlineColor(origOc1);
+    if (t2) {
+      t2->setFillColor(origC2);
+      t2->setOutlineColor(origOc2);
+    }
   };
 
   if (m_gameState == GameState::Controls) {
@@ -938,7 +1016,7 @@ void Menu::draw(sf::RenderWindow &window, GameState m_gameState) {
   if (m_gameState == GameState::Settings) {
     //? Settings buttons with focus outlines
     //? Order: Lang(0), Controls(1), Diff(2), VSync(3), Music(4), FPS(5),
-    //Hitbox(6), Back(7)
+    // Hitbox(6), Back(7)
     struct {
       sf::RectangleShape *btn;
       sf::Text *t1;
@@ -950,9 +1028,10 @@ void Menu::draw(sf::RenderWindow &window, GameState m_gameState) {
         {&m_difficultyButton, &m_difficultyText, &m_difficultyValueText, 2},
         {&m_vsyncButton, &m_vsyncText, &m_vsyncValueText, 3},
         {&m_musicButton, &m_musicText, &m_musicValueText, 4},
-        {&m_FPSCounterButton, &m_FPSCounterText, &m_FPSCounterValueText, 5},
-        {&m_hitboxButton, &m_hitboxText, &m_hitboxValueText, 6},
-        {&m_backButton, &m_backButtonText, nullptr, 7},
+        {&m_FPSCounterButton, &m_FPSCounterText, &m_FPSCounterValueText, 6},
+        {&m_hitboxButton, &m_hitboxText, &m_hitboxValueText, 7},
+        {&m_sfxButton, &m_sfxText, &m_sfxValueText, 5},
+        {&m_backButton, &m_backButtonText, nullptr, 8},
     };
     for (auto &item : items) {
       drawBtn(*item.btn, activeIdx == item.idx, isPressed);

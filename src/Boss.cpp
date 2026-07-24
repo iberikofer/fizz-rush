@@ -51,9 +51,16 @@ void Boss::loadAssets() {
 
   for (int i = 0; i < 5; ++i) {
     sf::Sound s(m_ricochetSoundBuffer);
-    s.setVolume(50.0f);
+    s.setVolume(AudioConfig::RICOCHET);
     m_ricochetSounds.push_back(s);
   }
+
+  m_attackSound.setBuffer(attackSoundBuffer);
+  m_attackSound.setVolume(AudioConfig::BOSS_ATTACK);
+  m_warningSound.setBuffer(warningSoundBuffer);
+  m_warningSound.setVolume(AudioConfig::BOSS_WARNING);
+  m_deathSound.setBuffer(deathSoundBuffer);
+  m_deathSound.setVolume(AudioConfig::BOSS_DEATH);
 
   m_boss.setTexture(m_bossTexture, true);
   m_boss.setScale({1.0f, 1.0f});
@@ -374,6 +381,10 @@ void Boss::update(sf::Time dt, sf::Vector2f playerPos, float windowWidth,
       m_attackTimer += dt.asSeconds();
       m_boss.setColor(sf::Color::White);
 
+      float curX = m_boss.getPosition().x;
+      if (curX < 130.0f) m_boss.move({(130.0f - curX) * 5.0f * dt.asSeconds(), 0});
+      else if (curX > windowWidth - 130.0f) m_boss.move({(windowWidth - 130.0f - curX) * 5.0f * dt.asSeconds(), 0});
+
       if (m_attackTimer >= m_currentIdleDuration) {
         m_attackTimer = 0.0f;
         m_attackState = AttackState::Warning;
@@ -571,6 +582,10 @@ void Boss::update(sf::Time dt, sf::Vector2f playerPos, float windowWidth,
       m_attackTimer += dt.asSeconds();
       m_boss.setColor(sf::Color::White);
 
+      float curX = m_boss.getPosition().x;
+      if (curX < 130.0f) m_boss.move({(130.0f - curX) * 5.0f * dt.asSeconds(), 0});
+      else if (curX > windowWidth - 130.0f) m_boss.move({(windowWidth - 130.0f - curX) * 5.0f * dt.asSeconds(), 0});
+
       sf::Vector2f bossPos = m_boss.getPosition();
       sf::Vector2f dir = playerPos - bossPos;
       float distance = std::sqrt(dir.x * dir.x + dir.y * dir.y);
@@ -721,7 +736,9 @@ void Boss::update(sf::Time dt, sf::Vector2f playerPos, float windowWidth,
                               m_dashVelocity.y * m_dashVelocity.y);
         m_dashVelocity = (m_dashVelocity / len) * m_currentDashSpeed;
 
-        playRicochetSound();
+        if (m_bounceCount < m_bounceLimit) {
+            playRicochetSound();
+        }
 
         m_boss.setPosition({std::clamp(pos.x, 51.0f, windowWidth - 51.0f),
                             std::clamp(pos.y, 51.0f, windowHeight - 51.0f)});
@@ -907,6 +924,16 @@ void Boss::stopSound() {
   m_attackSound.stop();
   m_warningSound.stop();
   m_deathSound.stop();
+}
+
+void Boss::updateSfxVolume(bool playSfx, float multiplier) {
+  m_deathSound.setVolume(playSfx ? 50.f * multiplier : 0.f);
+  m_attackSound.setVolume(playSfx ? 30.f * multiplier : 0.f);
+  m_warningSound.setVolume(playSfx ? 45.f * multiplier : 0.f);
+  m_antiCheatSound.setVolume(playSfx ? 40.f * multiplier : 0.f);
+  slowBrushSound.setVolume(playSfx ? 40.f * multiplier : 0.f);
+  fastBrushSound.setVolume(playSfx ? 50.f * multiplier : 0.f);
+  for (auto& s : m_ricochetSounds) s.setVolume(playSfx ? 40.f * multiplier : 0.f);
 }
 
 void Boss::playRicochetSound() {

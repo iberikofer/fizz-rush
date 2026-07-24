@@ -23,9 +23,10 @@ Player::Player(float winWidth, float winHeight) : m_player(m_canTexture),
 	m_isInvincible = false;
 	m_invincibilityTimer = 0.0f;
 	m_showAura = false;
-	m_wallSound.setVolume(20.0f);
+	m_wallSound.setVolume(AudioConfig::PLAYER_WALL);
+	m_hitSound.setVolume(AudioConfig::PLAYER_HIT);
 	m_rollSound.setLooping(true);
-	m_rollSound.setVolume(45.0f);
+	m_rollSound.setVolume(AudioConfig::PLAYER_ROLL);
 	m_wallSoundTimer = 0.5f;
 	m_wallSoundInterval = 0.2f;
 	m_rollAnimTimer = 0.0f;
@@ -106,6 +107,7 @@ void Player::update(sf::Time dt, float winWidth, float winHeight, float m_machin
 	if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Down) || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::S))
 		inputY += 1.0f;
 
+	bool usingJoystick = false;
 	if (inputX == 0.0f && inputY == 0.0f && sf::Joystick::isConnected(0))
 	{
 		float joyX = sf::Joystick::getAxisPosition(0, sf::Joystick::Axis::X);
@@ -113,11 +115,11 @@ void Player::update(sf::Time dt, float winWidth, float winHeight, float m_machin
 
 		float deadzone = 20.0f;
 
-		if (abs(joyX) > deadzone)
-			inputX = joyX / 100.0f;
-
-		if (abs(joyY) > deadzone)
-			inputY = joyY / 100.0f;
+		if (abs(joyX) > deadzone || abs(joyY) > deadzone) {
+			inputX = abs(joyX) > deadzone ? joyX / 100.0f : 0.0f;
+			inputY = abs(joyY) > deadzone ? joyY / 100.0f : 0.0f;
+			usingJoystick = true;
+		}
 	}
 
 	if (currentEpisode == 0)
@@ -128,7 +130,7 @@ void Player::update(sf::Time dt, float winWidth, float winHeight, float m_machin
 		{
 			m_playerMoved = true;
 
-			if (std::abs(inputX) > std::abs(inputY))
+			if (!usingJoystick && std::abs(inputX) > std::abs(inputY))
 			{
 				m_targetRotation = 0.0f;
 			}
@@ -338,11 +340,16 @@ void Player::update(sf::Time dt, float winWidth, float winHeight, float m_machin
 	}
 }
 
-void Player::stopSound()
-{
-	m_hitSound.stop();
-	m_wallSound.stop();
-	m_rollSound.stop();
+void Player::stopSound() {
+  m_rollSound.stop();
+  m_hitSound.stop();
+  m_wallSound.stop();
+}
+
+void Player::updateSfxVolume(bool playSfx) {
+  m_rollSound.setVolume(playSfx ? 35.f : 0.f);
+  m_hitSound.setVolume(playSfx ? 45.f : 0.f);
+  m_wallSound.setVolume(playSfx ? 40.f : 0.f);
 }
 
 void Player::checkWorldCollision(float winWidth, float winHeight, float leftWall, float rightWall, float topWall, float m_WallPushBack, bool playWallSound)
@@ -451,6 +458,7 @@ void Player::resetGame(float m_startPosX, float m_startPosY, int maxHP, float di
 	m_isInvincible = false;
 	m_invincibilityTimer = 0.0f;
 	m_showAura = false;
+	m_isDying = false;
 	m_playerMoved = false;
 	m_basicSpeed = difficultySpeed;
 	m_speed = m_basicSpeed;
@@ -504,25 +512,27 @@ void Player::draw(sf::RenderWindow &window, const GameSettings &gameSettings)
 		window.draw(m_arrow);
 	}
 
-	for (int i = 0; i < m_maxHP; i++)
-	{
-		if (i < m_HP)
+	if (!m_isDying) {
+		for (int i = 0; i < m_maxHP; i++)
 		{
-			m_HealthSprite.setTexture(m_fullHeartTexture, true);
-		}
-		else
-		{
-			if (m_isInvincible && sin(m_invincibilityTimer * 20.0f) > 0)
+			if (i < m_HP)
 			{
-				m_HealthSprite.setTexture(m_emptyHeartTexture2, true);
+				m_HealthSprite.setTexture(m_fullHeartTexture, true);
 			}
 			else
 			{
-				m_HealthSprite.setTexture(m_emptyHeartTexture, true);
+				if (m_isInvincible && sin(m_invincibilityTimer * 20.0f) > 0)
+				{
+					m_HealthSprite.setTexture(m_emptyHeartTexture2, true);
+				}
+				else
+				{
+					m_HealthSprite.setTexture(m_emptyHeartTexture, true);
+				}
 			}
+			m_HealthSprite.setPosition({15.0f, 25.0f + i * 75.0f});
+			window.draw(m_HealthSprite);
 		}
-		m_HealthSprite.setPosition({15.0f, 25.0f + i * 75.0f});
-		window.draw(m_HealthSprite);
 	}
 
 	if (gameSettings.showHitbox)
@@ -600,4 +610,13 @@ void Player::updateCarpetSpeed(bool isOnCarpet)
 	{
 		m_carpetMultiplier = (m_difficulty == GameDifficulty::Hard) ? 1.0f : 0.75f;
 	}
+}
+
+void Player::prepareForDeathAnim() {
+	m_player.setTexture(m_canTexture, true);
+	m_showAura = false;
+	m_isInvincible = false;
+	m_invincibilityTimer = 0.0f;
+	m_isDying = true;
+	stopSound();
 }
