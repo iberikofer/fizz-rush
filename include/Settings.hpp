@@ -13,7 +13,9 @@ enum class GameState {
   Settings,
   Controls,
   GameOver,
-  EpisodeTransition
+  EpisodeTransition,
+  Disclaimer,
+  StoryScreen
 };
 
 enum class WindowMode { Windowed, WindowedFull, Fullscreen };

@@ -7,6 +7,7 @@
 enum class InputMode
 {
 	Mouse,
+	Keyboard,
 	Gamepad
 };
 
@@ -34,6 +35,9 @@ public:
 	InputMode getInputMode() const;
 	void resetFocus(GameState state);
 	void syncFocusFromHover(GameState state);
+
+	const sf::Font& getFont() const { return m_menuFont; }
+	const sf::Font& getFontUA() const { return m_menuFontUA; }
 	void updatePulse(float dtSeconds);
 
 	void draw(sf::RenderWindow &window, GameState m_gameState);

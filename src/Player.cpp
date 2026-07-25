@@ -240,6 +240,8 @@ void Player::update(sf::Time dt, float winWidth, float winHeight, float m_machin
 		{
 			if (m_rollSound.getStatus() != sf::Sound::Status::Playing)
 				m_rollSound.play();
+			// Slow pitch when off carpet, normal pitch when on carpet
+			m_rollSound.setPitch(isOnCarpet ? 1.0f : 0.5f);
 		}
 		else
 		{

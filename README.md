@@ -16,9 +16,10 @@
 ### 🌟 Features
 
 - **⚡ Dynamic Gameplay:** Fast-paced action where surviving becomes harder the longer you play, featuring an intelligent enemy spawn system.
+- **📖 Engaging Storyline:** Immerse yourself in the game's lore through fully fleshed-out textual backstories and external video cutscenes that seamlessly connect each episode.
 - **👾 Diverse Enemies:** Face off against multiple enemy types (Hands, Bars, Chasers) and survive the ultimate Boss battle in the finale!
 - **👹 Multi-Phase Boss Battle:** The final episode features a meticulously designed boss fight. The boss transitions through different phases, unleashing varying attack patterns including ricocheting cookies and sweeping brushes (fast and slow variants), challenging your reflexes to the limit!
-- **✨ Visual Polish & Effects:** Experience a handcrafted particle system used for boss defeat animations, seamless screen fade transitions between episodes, and a highly polished interactive UI with butter-smooth hover and press animations.
+- **✨ Visual Polish & Effects:** Experience a handcrafted particle system, seamless screen fade transitions between episodes, and a highly polished interactive UI with butter-smooth hover and press animations.
 - **❤️ Health & Protection System:** Collect hearts dropped during gameplay to restore health. Gain a brief shield of invulnerability after taking damage, giving you a safe moment to escape and reposition yourself.
 - **🎶 Immersive Audio:** Each episode features its own unique background soundtrack and satisfying sound effects for hits, healing, and UI interactions.
 - **⚙️ Extensive Settings & Persistence:** An interactive, bilingual (English/Ukrainian) settings menu featuring an intuitive 2-column layout with 2D grid navigation. Toggle Music, VSync, FPS Counter, Debug Hitboxes, and Difficulty (Easy, Normal, Hard). All preferences are automatically saved to a `settings.ini` file and loaded on your next session!
@@ -32,8 +33,8 @@
   - **Custom Physics & Collision Detection:** Uses an optimized circle-based intersection algorithm (`CollisionCircle`) to handle precise hitboxes instead of basic rectangles.
   - **Particle & VFX System:** A lightweight, custom-built particle engine handling temporary visual effects like enemy particles and healing indicators without massive performance overhead.
   - **State Machine Architecture:** Robust handling of game states (`MainMenu`, `Playing`, `Paused`, `Settings`, `GameOver`, `EpisodeTransition`, `Victory`) and Boss AI phases (`Starting`, `Phase1`, `Phase2`, `Death`).
-  - **Configuration Management:** Reliable parsing and generation of INI configuration files using standard C++ streams for seamless state persistence across sessions.
-  - **Dynamic Input Switching:** Seamlessly switch between Mouse, Keyboard, and Gamepad on the fly, with intelligent mouse-snapping to the actively focused UI element.
+  - **Configuration Management & Logging:** Reliable parsing and generation of INI configuration files (`settings.ini`) for seamless state persistence across sessions. Additionally, runtime errors and crashes are logged to facilitate debugging, adhering to GitHub open-source best practices.
+  - **Dynamic Input Adaptability:** Seamlessly switch between Mouse, Keyboard, and Gamepad on the fly. The UI prompts and controls instantly adapt to your active input device without needing to restart.
   - **Smooth Transitions:** Custom alpha-blending logic for seamless fade-ins and fade-outs between menus and game episodes.
 
 ## 🏆 Project Achievements
@@ -148,9 +149,10 @@ This project was developed strictly for educational and academic purposes during
 ### 🌟 Особливості
 
 - **⚡ Динамічний геймплей:** Швидкісний екшен, у якому виживати стає все важче з кожною хвилиною гри, завдяки продуманій системі появи ворогів.
+- **📖 Захопливий сюжет:** Занурюйтесь у світ гри завдяки атмосферним текстовим передісторіям та відео-катсценам, що об'єднують ігрові епізоди в єдину історію.
 - **👾 Різноманітні вороги:** Зіткніться з різними типами ворогів (Руки, Блоки, Переслідувачі) та виживіть в ультимативній битві з Босом у фіналі!
 - **👹 Багатофазна Битва з Босом:** Фінальний епізод пропонує ретельно продуману битву. Босс змінює фази, використовуючи різні патерни атак, включаючи печиво, що рикошетить від стін, та гігантські щітки (повільні й швидкі), перевіряючи ваші рефлекси на міцність!
-- **✨ Візуальний блиск та ефекти:** Насолоджуйтесь власною системою частинок для анімацій (наприклад, при знищенні боса), безшовними затемненнями екрану при переході між епізодами та надзвичайно відшліфованим інтерактивним інтерфейсом із плавними анімаціями наведення та натискання кнопок.
+- **✨ Візуальний блиск та ефекти:** Насолоджуйтесь власною системою частинок для анімацій, безшовними затемненнями екрану при переході між епізодами та надзвичайно відшліфованим інтерактивним інтерфейсом із плавними анімаціями наведення та натискання кнопок.
 - **❤️ Система здоров'я та захисту:** Збирайте сердечка під час гри, щоб відновлювати здоров'я. Після отримання шкоди ваш персонаж отримує тимчасовий щит невразливості, що дає змогу безпечно відступити та змінити позицію.
 - **🎶 Атмосферний звук:** Кожен епізод має власний унікальний саундтрек та приємні звукові ефекти для ударів, лікування та взаємодії з меню.
 - **⚙️ Розширені налаштування та збереження:** Двомовне (Англійська/Українська) інтерактивне меню з інтуїтивно зрозумілим двоколонковим дизайном та 2D-навігацією. Ви можете налаштувати музику, VSync, лічильник FPS, хітбокси та рівень складності (Легкий, Нормальний, Важкий). Усі ваші налаштування автоматично зберігаються у файл `settings.ini` та завантажуються під час наступного запуску гри!
@@ -164,8 +166,8 @@ This project was developed strictly for educational and academic purposes during
   - **Кастомна фізика та виявлення зіткнень:** Використовує оптимізований алгоритм перевірки перетинів на основі кіл (`CollisionCircle`) для обробки точних хітбоксів замість звичайних прямокутників.
   - **Система частинок та VFX:** Легкий, власноруч написаний рушій частинок, що обробляє тимчасові візуальні ефекти, такі як частинки ворогів або індикатори лікування, без зайвого навантаження на продуктивність.
   - **Архітектура керування станами (State Machine):** Надійна обробка ігрових станів (`MainMenu`, `Playing`, `Paused`, `Settings`, `GameOver`, `EpisodeTransition`, `Victory`) та фаз штучного інтелекту Боса (`Starting`, `Phase1`, `Phase2`, `Death`).
-  - **Керування конфігурацією:** Надійний парсинг та генерація INI-файлів за допомогою стандартних потоків вводу/виводу C++ для збереження налаштувань між ігровими сесіями.
-  - **Динамічне перемикання вводу:** Миттєве перемикання між мишею, клавіатурою та геймпадом "на льоту" з розумним "прилипанням" курсора миші до активного елемента інтерфейсу.
+  - **Керування конфігурацією та Логування:** Надійний парсинг та генерація INI-файлів (`settings.ini`) для збереження налаштувань між ігровими сесіями. Крім того, всі непередбачувані помилки та краші логуються для зручного дебагінгу, що відповідає best practices розробки на GitHub.
+  - **Адаптивність управління (Dynamic Input):** Гра автоматично розпізнає зміну типу управління (клавіатура/миша або геймпад) "на льоту". Інтерфейс та підказки кнопок миттєво адаптуються під поточний пристрій.
   - **Плавні переходи:** Кастомна логіка альфа-змішування (alpha-blending) для безшовних ефектів появи та згасання екрану між меню та ігровими епізодами.
 
 ## 🏆 Досягнення проєкту

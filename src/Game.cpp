@@ -4,6 +4,76 @@
 #include <ctime>
 #include <iostream>
 
+PadBtn Game::mapJoystickButtonToPadBtn(unsigned int joystickId,
+                                       unsigned int buttonId) {
+  if (!sf::Joystick::isConnected(joystickId))
+    return static_cast<PadBtn>(buttonId);
+
+  sf::Joystick::Identification id = sf::Joystick::getIdentification(joystickId);
+  std::string name = id.name.toAnsiString();
+  bool isPS = (name.find("Sony") != std::string::npos ||
+               name.find("DualShock") != std::string::npos ||
+               name.find("DualSense") != std::string::npos);
+
+  if (isPS) {
+    switch (buttonId) {
+    case 1:
+      return PadBtn::A;
+    case 2:
+      return PadBtn::B;
+    case 0:
+      return PadBtn::X;
+    case 3:
+      return PadBtn::Y;
+    case 8:
+      return PadBtn::Select;
+    case 9:
+      return PadBtn::Start;
+    default:
+      return static_cast<PadBtn>(buttonId);
+    }
+  }
+  return static_cast<PadBtn>(buttonId);
+}
+
+bool Game::isPadButtonPressed(unsigned int joystickId, PadBtn btn) {
+  if (!sf::Joystick::isConnected(joystickId))
+    return false;
+
+  sf::Joystick::Identification id = sf::Joystick::getIdentification(joystickId);
+  std::string name = id.name.toAnsiString();
+  bool isPS = (name.find("Sony") != std::string::npos ||
+               name.find("DualShock") != std::string::npos ||
+               name.find("DualSense") != std::string::npos);
+
+  unsigned int physicalBtn = static_cast<unsigned int>(btn);
+  if (isPS) {
+    switch (btn) {
+    case PadBtn::A:
+      physicalBtn = 1;
+      break;
+    case PadBtn::B:
+      physicalBtn = 2;
+      break;
+    case PadBtn::X:
+      physicalBtn = 0;
+      break;
+    case PadBtn::Y:
+      physicalBtn = 3;
+      break;
+    case PadBtn::Select:
+      physicalBtn = 8;
+      break;
+    case PadBtn::Start:
+      physicalBtn = 9;
+      break;
+    default:
+      break;
+    }
+  }
+  return sf::Joystick::isButtonPressed(joystickId, physicalBtn);
+}
+
 #ifdef _WIN32
 #include <stdint.h>
 extern "C" {
@@ -273,8 +343,12 @@ void Game::run() {
           m_gameWindow.setSize({std::max(minW, resized->size.x),
                                 std::max(minH, resized->size.y)});
         }
+      } else if (m_isFadingIn || m_isFadingOut) {
+        continue;
       } else if (const auto *mouseMoved =
                      event->getIf<sf::Event::MouseMoved>()) {
+        if (!m_gameWindow.hasFocus())
+          continue;
         sf::Vector2i newPos(mouseMoved->position.x, mouseMoved->position.y);
         int dx = newPos.x - m_lastMousePos.x;
         int dy = newPos.y - m_lastMousePos.y;
@@ -302,6 +376,9 @@ void Game::run() {
 
       } else if (const auto *mouseClick =
                      event->getIf<sf::Event::MouseButtonPressed>()) {
+        m_gameWindow.requestFocus();
+        if (!m_gameWindow.hasFocus())
+          continue;
         if (mouseClick->button == sf::Mouse::Button::Left) {
           //? Mouse click -> instantly switch to Mouse mode
           if (m_inputMode != InputMode::Mouse) {
@@ -322,6 +399,8 @@ void Game::run() {
         }
       } else if (const auto *keyPressed =
                      event->getIf<sf::Event::KeyPressed>()) {
+        if (!m_gameWindow.hasFocus())
+          continue;
 
         bool isNavKey = (keyPressed->code == sf::Keyboard::Key::Up ||
                          keyPressed->code == sf::Keyboard::Key::Down ||
@@ -331,9 +410,9 @@ void Game::run() {
                          keyPressed->code == sf::Keyboard::Key::A ||
                          keyPressed->code == sf::Keyboard::Key::S ||
                          keyPressed->code == sf::Keyboard::Key::D);
-        if (isNavKey && m_inputMode != InputMode::Gamepad) {
-          m_inputMode = InputMode::Gamepad;
-          m_menu.setInputMode(InputMode::Gamepad);
+        if (isNavKey && m_inputMode != InputMode::Keyboard) {
+          m_inputMode = InputMode::Keyboard;
+          m_menu.setInputMode(InputMode::Keyboard);
           m_gameWindow.setMouseCursorVisible(false);
           //? Warp cursor to corner
           sf::Mouse::setPosition(
@@ -374,7 +453,9 @@ void Game::run() {
         }
 
         if (keyPressed->code == sf::Keyboard::Key::Escape) {
-          if (m_currentGameState == GameState::Playing) {
+          if (m_currentGameState == GameState::Playing ||
+              m_currentGameState == GameState::StoryScreen) {
+            m_lastGameState = m_currentGameState;
             m_currentGameState = GameState::Paused;
             m_menu.resetFocus(GameState::Paused);
             m_menu.setupMenuButtons(m_currentGameState, currentW, currentH,
@@ -393,10 +474,11 @@ void Game::run() {
                 m_cookieSound.pause();
             }
           } else if (m_currentGameState == GameState::Paused) {
-            m_currentGameState = GameState::Playing;
+            m_currentGameState = m_lastGameState;
             m_menu.setupMenuButtons(m_currentGameState, currentW, currentH,
                                     m_gameSettings, m_lastGameState);
-            if (m_gameSettings.playMusic) {
+            if (m_currentGameState == GameState::Playing &&
+                m_gameSettings.playMusic) {
               m_Episode1Music.setVolume(30.0f);
               m_Episode2Music.setVolume(30.0f);
               m_Episode3Music.setVolume(45.0f);
@@ -419,7 +501,8 @@ void Game::run() {
             m_menu.resetFocus(GameState::Settings);
             m_menu.setupMenuButtons(m_currentGameState, currentW, currentH,
                                     m_gameSettings, m_lastGameState);
-          } else if (m_currentGameState == GameState::GameOver) {
+          } else if (m_currentGameState == GameState::GameOver ||
+                     m_currentGameState == GameState::Disclaimer) {
             if (!m_isFadingOut) {
               m_isFadingOut = true;
               m_fadeAlpha = 0.0f;
@@ -430,7 +513,11 @@ void Game::run() {
 
         if (keyPressed->code == sf::Keyboard::Key::Enter) {
           if (m_currentGameState == GameState::EpisodeTransition &&
-              m_nextEpisode == GameEpisode::Victory) {
+              m_nextEpisode != GameEpisode::Victory &&
+              m_waitingForCutsceneReturn && m_cutsceneCooldown <= 0.0f) {
+            m_cutsceneSkipped = true;
+          } else if (m_currentGameState == GameState::EpisodeTransition &&
+                     m_nextEpisode == GameEpisode::Victory) {
             playCutscene(4);
             m_winMusic.stop();
             m_winMusic.setVolume(0);
@@ -443,6 +530,22 @@ void Game::run() {
               m_menu.updateMusicVolume(true);
             m_isFadingIn = true;
             m_fadeAlpha = 255.0f;
+          }
+          if (m_currentGameState == GameState::Disclaimer && !m_isFadingOut) {
+            m_isFadingOut = true;
+            m_fadeAlpha = 0.0f;
+            m_goToMenuAfterFade = false;
+          }
+          if (m_currentGameState == GameState::StoryScreen && !m_isFadingOut) {
+            if (!m_typewriterDone) {
+              m_storyTextVisible = m_storyTextFull;
+              m_typewriterDone = true;
+              m_typewriterIndex = m_storyTextFull.getSize();
+            } else {
+              m_isFadingOut = true;
+              m_fadeAlpha = 0.0f;
+              m_goToMenuAfterFade = false;
+            }
           }
           if (isMenuScreen) {
             int action = m_menu.getFocusedButtonClickType(m_currentGameState);
@@ -494,6 +597,8 @@ void Game::run() {
 
       } else if (const auto *joyBtn =
                      event->getIf<sf::Event::JoystickButtonPressed>()) {
+        if (!m_gameWindow.hasFocus())
+          continue;
         if (m_inputMode != InputMode::Gamepad) {
           m_inputMode = InputMode::Gamepad;
           m_menu.setInputMode(InputMode::Gamepad);
@@ -505,10 +610,16 @@ void Game::run() {
           m_menu.syncFocusFromHover(m_currentGameState);
         }
 
-        PadBtn btn = static_cast<PadBtn>(joyBtn->button);
+        PadBtn btn =
+            mapJoystickButtonToPadBtn(joyBtn->joystickId, joyBtn->button);
 
         //? A button (0) -> Confirm (like Enter)
         if (btn == PadBtn::A) {
+          if (m_currentGameState == GameState::EpisodeTransition &&
+              m_nextEpisode != GameEpisode::Victory &&
+              m_waitingForCutsceneReturn && m_cutsceneCooldown <= 0.0f) {
+            m_cutsceneSkipped = true;
+          }
           bool isMenuScreen2 = (m_currentGameState == GameState::MainMenu ||
                                 m_currentGameState == GameState::Paused ||
                                 m_currentGameState == GameState::Settings ||
@@ -520,6 +631,22 @@ void Game::run() {
               m_pendingMenuAction = action;
               m_pendingMenuTimer = 0.15f;
               m_menuButtonSound.play();
+            }
+          }
+          if (m_currentGameState == GameState::Disclaimer && !m_isFadingOut) {
+            m_isFadingOut = true;
+            m_fadeAlpha = 0.0f;
+            m_goToMenuAfterFade = false;
+          }
+          if (m_currentGameState == GameState::StoryScreen && !m_isFadingOut) {
+            if (!m_typewriterDone) {
+              m_storyTextVisible = m_storyTextFull;
+              m_typewriterDone = true;
+              m_typewriterIndex = m_storyTextFull.getSize();
+            } else {
+              m_isFadingOut = true;
+              m_fadeAlpha = 0.0f;
+              m_goToMenuAfterFade = false;
             }
           }
         }
@@ -545,19 +672,21 @@ void Game::run() {
             m_menu.resetFocus(GameState::Settings);
             m_menu.setupMenuButtons(m_currentGameState, currentW, currentH,
                                     m_gameSettings, m_lastGameState);
-          } else if (m_currentGameState == GameState::GameOver) {
-            m_currentGameState = GameState::MainMenu;
-            m_menu.resetFocus(GameState::MainMenu);
-            m_menu.setupMenuButtons(m_currentGameState, currentW, currentH,
-                                    m_gameSettings, m_lastGameState);
-            if (m_gameSettings.playMusic)
-              m_menu.updateMusicVolume(true);
+          } else if (m_currentGameState == GameState::GameOver ||
+                     m_currentGameState == GameState::Disclaimer) {
+            if (!m_isFadingOut) {
+              m_isFadingOut = true;
+              m_fadeAlpha = 0.0f;
+              m_goToMenuAfterFade = true;
+            }
           }
         }
 
         //? Start button (7) -> Pause/Resume during gameplay
         if (btn == PadBtn::Start) {
-          if (m_currentGameState == GameState::Playing) {
+          if (m_currentGameState == GameState::Playing ||
+              m_currentGameState == GameState::StoryScreen) {
+            m_lastGameState = m_currentGameState;
             m_currentGameState = GameState::Paused;
             m_menu.resetFocus(GameState::Paused);
             m_menu.setupMenuButtons(m_currentGameState, currentW, currentH,
@@ -568,10 +697,11 @@ void Game::run() {
             m_player.stopSound();
             m_boss.stopSound();
           } else if (m_currentGameState == GameState::Paused) {
-            m_currentGameState = GameState::Playing;
+            m_currentGameState = m_lastGameState;
             m_menu.setupMenuButtons(m_currentGameState, currentW, currentH,
                                     m_gameSettings, m_lastGameState);
-            if (m_gameSettings.playMusic) {
+            if (m_currentGameState == GameState::Playing &&
+                m_gameSettings.playMusic) {
               m_Episode1Music.setVolume(30.0f);
               m_Episode2Music.setVolume(30.0f);
               m_Episode3Music.setVolume(45.0f);
@@ -580,13 +710,16 @@ void Game::run() {
         }
 
       } else if (event->is<sf::Event::FocusLost>()) {
-        if (m_currentGameState == GameState::Playing) {
+        if (m_currentGameState == GameState::Playing ||
+            m_currentGameState == GameState::StoryScreen) {
           bool canPause = true;
-          if (m_currentEpisode == GameEpisode::BossFight &&
+          if (m_currentGameState == GameState::Playing &&
+              m_currentEpisode == GameEpisode::BossFight &&
               m_boss.getPhase() == BossPhase::Death)
             canPause = false;
 
           if (canPause) {
+            m_lastGameState = m_currentGameState;
             m_currentGameState = GameState::Paused;
             m_menu.resetFocus(GameState::Paused);
             m_menu.setupMenuButtons(m_currentGameState, m_currentWindowSize.x,
@@ -600,6 +733,7 @@ void Game::run() {
           }
         }
       } else if (event->is<sf::Event::FocusGained>()) {
+        m_gameWindow.requestFocus();
         m_gameClock.restart();
       }
     }
@@ -609,7 +743,8 @@ void Game::run() {
                                m_currentGameState == GameState::Settings ||
                                m_currentGameState == GameState::Controls ||
                                m_currentGameState == GameState::GameOver);
-    if (isMenuActiveForNav && sf::Joystick::isConnected(0)) {
+    if (isMenuActiveForNav && sf::Joystick::isConnected(0) &&
+        m_gameWindow.hasFocus()) {
       float stickY = sf::Joystick::getAxisPosition(0, sf::Joystick::Axis::Y);
       float stickX = sf::Joystick::getAxisPosition(0, sf::Joystick::Axis::X);
       float povY = sf::Joystick::getAxisPosition(0, sf::Joystick::Axis::PovY);
@@ -663,7 +798,33 @@ void Game::run() {
     if (m_mouseSwitchCooldown > 0.f)
       m_mouseSwitchCooldown -= dt.asSeconds();
 
+    if (m_cutsceneCooldown > 0.f) {
+      m_cutsceneCooldown -= dt.asSeconds();
+    }
+
     m_menu.updatePulse(dt.asSeconds());
+
+    if (m_currentGameState == GameState::EpisodeTransition &&
+        m_nextEpisode != GameEpisode::Victory && !m_cutsceneSkipped) {
+      bool holdKey = m_gameWindow.hasFocus() &&
+                     sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Enter);
+      bool holdBtn =
+          m_gameWindow.hasFocus() && isPadButtonPressed(0, PadBtn::A);
+      if (holdKey || holdBtn) {
+        m_cutsceneSkipHoldTimer += dt.asSeconds();
+        if (!m_skipTextAnimating) {
+          m_skipTextAnimating = true;
+          m_skipTextAnimTimer = 0.f;
+        }
+        if (m_cutsceneSkipHoldTimer >= 1.0f) {
+          m_cutsceneSkipped = true;
+        }
+      } else {
+        m_cutsceneSkipHoldTimer = 0.f;
+        m_skipTextAnimating = false;
+        m_skipTextAnimTimer = 0.f;
+      }
+    }
 
     if (m_rumbleTimer > 0.f) {
       m_rumbleTimer -= dt.asSeconds();
@@ -680,12 +841,22 @@ void Game::run() {
     }
 
     if (m_isFadingIn) {
-      float fadeSpeed = 700.0f;
-      m_fadeAlpha -= fadeSpeed * dt.asSeconds();
+      if (m_blackScreenDelay > 0.0f) {
+        m_blackScreenDelay -= dt.asSeconds();
+        if (m_blackScreenDelay <= 0.0f) {
+          if (m_currentGameState == GameState::EpisodeTransition) {
+            if (m_transitionSound.getStatus() != sf::Sound::Status::Playing)
+              m_transitionSound.play();
+          }
+        }
+      } else {
+        float fadeSpeed = 700.0f;
+        m_fadeAlpha -= fadeSpeed * dt.asSeconds();
 
-      if (m_fadeAlpha <= 0.0f) {
-        m_fadeAlpha = 0.0f;
-        m_isFadingIn = false;
+        if (m_fadeAlpha <= 0.0f) {
+          m_fadeAlpha = 0.0f;
+          m_isFadingIn = false;
+        }
       }
 
       m_fadeRect.setFillColor(
@@ -714,6 +885,7 @@ void Game::run() {
           m_isFadingOut = false;
 
           if (m_goToMenuAfterFade) {
+            m_isStoryActive = false;
             m_currentGameState = GameState::MainMenu;
             m_winMusic.stop();
             m_Episode1Music.stop();
@@ -734,10 +906,116 @@ void Game::run() {
             m_fadeAlpha = 255.0f;
 
             m_goToMenuAfterFade = false;
-          } else if (m_currentGameState == GameState::MainMenu ||
-                     m_currentGameState == GameState::GameOver) {
-            startNewGame(true);
+          } else if (m_currentGameState == GameState::MainMenu &&
+                     !m_fromGameOver) {
+            m_currentGameState = GameState::Disclaimer;
             m_isFadingIn = true;
+            m_fadeAlpha = 255.0f;
+          } else if (m_currentGameState == GameState::Disclaimer) {
+            startNewGame(false);
+            m_nextEpisodeAfterFade = GameEpisode::VendingMachine;
+            m_goToStoryAfterFade = true;
+            m_isFadingOut = true;
+          } else if (m_currentGameState == GameState::StoryScreen) {
+            m_isStoryActive = false;
+            startTransition(m_nextEpisodeAfterFade);
+            m_blackScreenDelay = 0.5f;
+            m_isFadingIn = true;
+          } else if (m_currentGameState == GameState::EpisodeTransition) {
+            m_isStoryActive = false;
+            m_currentGameState = GameState::Playing;
+            m_isFadingIn = true;
+            m_fadeAlpha = 255.0f;
+            setupEpisode(m_nextEpisode);
+            m_gameClock.restart();
+          } else if (m_goToStoryAfterFade) {
+            m_goToStoryAfterFade = false;
+
+            bool ua = m_gameSettings.ukrainianLanguage;
+            std::string rawStoryText;
+            if (m_nextEpisode == GameEpisode::VendingMachine) {
+              if (ua) {
+                rawStoryText =
+                    "Звичайний вечір у залі неонових ігрових автоматів "
+                    "обірвався\n"
+                    "раптовим стрибком напруги. Іскра. Гучний тріск. Коротке "
+                    "замикання.\n\n"
+                    "Поки всі думали, що це просто чергова поломка старого "
+                    "автомату з їжею,\n"
+                    "електричний розряд зробив дещо неможливе.\n"
+                    "Він випадково подарував свідомість... вам.\n\n"
+                    "Так, ви - звичайна прохолодна баночка Спрайту, яка щойно "
+                    "усвідомила\n"
+                    "своє існування в цьому жорстокому світі. І у вас великі "
+                    "проблеми.\n\n"
+                    "Тепер цей світ пластику, металу та спраглих геймерів -\n"
+                    "украй небезпечне місце. Ваша мета - вижити.\n"
+                    "Бути випитим чи вибухнути від сильного збовтування -\n"
+                    "обидва фінали означають неминучий кінець.\n\n"
+                    "Час показати цьому світові, на що здатна звичайна баночка "
+                    "Спрайту, наділена свідомістю.\n\n"
+                    "Удачі!";
+              } else {
+                rawStoryText =
+                    "A regular evening at the neon-lit arcade was cut short\n"
+                    "by a sudden power surge. A spark. A loud crack. A short "
+                    "circuit.\n\n"
+                    "While everyone thought it was just another breakdown of "
+                    "an "
+                    "old vending\n"
+                    "machine, the electric discharge did the impossible.\n"
+                    "It accidentally granted consciousness to... you.\n\n"
+                    "Yes, you are a regular, cold can of Sprite that has just "
+                    "realized\n"
+                    "its existence in this cruel world. And you are in deep "
+                    "trouble.\n\n"
+                    "Now, this world of plastic, metal, and thirsty gamers\n"
+                    "is a highly dangerous place. Your goal is to survive.\n"
+                    "Being drunk or exploding from being shaken too much -\n"
+                    "both endings mean an inevitable Game Over.\n\n"
+                    "It's time to show this world what a regular can of "
+                    "Sprite, "
+                    "endowed with consciousness, is capable of.\n\n"
+                    "Good luck!";
+              }
+            } else if (m_nextEpisode == GameEpisode::Survival) {
+              if (ua)
+                rawStoryText = "[Placeholder - Епізод 2]";
+              else
+                rawStoryText = "[Placeholder - Episode 2]";
+            } else if (m_nextEpisode == GameEpisode::BossFight) {
+              if (ua)
+                rawStoryText = "[Placeholder - Епізод 3]";
+              else
+                rawStoryText = "[Placeholder - Episode 3]";
+            }
+
+            m_storyTextFull =
+                sf::String::fromUtf8(rawStoryText.begin(), rawStoryText.end());
+
+            m_storyTextVisible.clear();
+            m_typewriterTimer = 0.f;
+            m_typewriterIndex = 0;
+            m_typewriterDone = false;
+            m_isStoryActive = true;
+            m_currentGameState = GameState::StoryScreen;
+
+            m_isFadingIn = true;
+            m_fadeAlpha = 255.0f;
+            m_isFadingOut = false;
+
+            m_loadingText.setScale({1.0f, 1.0f});
+            sf::Color textColor = m_loadingText.getFillColor();
+            textColor.a = 255;
+            m_loadingText.setFillColor(textColor);
+
+            m_cutsceneSkipped = false;
+            m_cutsceneSkipHoldTimer = 0.f;
+            m_waitingForCutsceneReturn = false;
+            m_skipTextAnimating = false;
+            m_skipTextAnimTimer = 0.f;
+
+            m_gameClock.restart();
           } else {
             startTransition(m_nextEpisodeAfterFade);
           }
@@ -768,7 +1046,12 @@ void Game::run() {
           pSprite.setColor(sf::Color::White);
           pSprite.setPosition(m_deathAnimVelocity);
 
-          m_deathAnimVelocity.y = -600.0f;
+          float floorY = currentH - 120.0f;
+          float topY = m_machineTopWall;
+          float playerY = pSprite.getPosition().y;
+          float t = std::clamp((playerY - topY) / (floorY - topY), 0.0f, 1.0f);
+          m_deathAnimVelocity.y = -350.0f - t * 580.0f;
+
           float leftSpace = pSprite.getPosition().x - m_currentLeftWall;
           float rightSpace =
               (currentW - m_currentRightWall) - pSprite.getPosition().x;
@@ -858,6 +1141,25 @@ void Game::run() {
 
     switch (m_currentGameState) {
     case GameState::Playing: {
+      if (m_currentEpisode == GameEpisode::VendingMachine && m_bgSprite2) {
+        if (m_player.hasPlayerMoved()) {
+          float scrollAmt = m_bgScrollSpeed * dt.asSeconds();
+          m_bgSprite.move({0.0f, -scrollAmt});
+          m_bgSprite2->move({0.0f, -scrollAmt});
+
+          float bgHeight = static_cast<float>(m_bgTexture.getSize().y) *
+                           m_bgSprite.getScale().y;
+
+          if (m_bgSprite.getPosition().y <= -bgHeight) {
+            m_bgSprite.setPosition(
+                {0.0f, m_bgSprite2->getPosition().y + bgHeight});
+          }
+          if (m_bgSprite2->getPosition().y <= -bgHeight) {
+            m_bgSprite2->setPosition(
+                {0.0f, m_bgSprite.getPosition().y + bgHeight});
+          }
+        }
+      }
 
       bool victoryInvincibility = false;
       if (m_boss.getPhase() == BossPhase::Death) {
@@ -1357,15 +1659,13 @@ void Game::run() {
       } else {
         m_transitionTimer -= dt.asSeconds();
 
-        float totalTime = 10.0f;
+        float totalTime = 5.0f;
         float timePassed = totalTime - m_transitionTimer;
 
         int alpha = 255;
 
         if (timePassed < 0.5f)
           alpha = static_cast<int>((timePassed / 0.5f) * 255);
-        else if (m_transitionTimer < 0.5f)
-          alpha = static_cast<int>((m_transitionTimer / 0.5f) * 255);
 
         if (alpha < 0)
           alpha = 0;
@@ -1380,28 +1680,52 @@ void Game::run() {
         float currentScale = 1.0f + (timePassed * zoomSpeed);
         m_loadingText.setScale({currentScale, currentScale});
 
+        if (m_skipTextAnimating) {
+          m_skipTextAnimTimer += dt.asSeconds();
+        }
+
         if (m_transitionTimer <= 0.0f) {
-          setupEpisode(m_nextEpisode);
-          m_currentGameState = GameState::Playing;
+          m_transitionTimer = 0.0f;
 
-          if (m_nextEpisode == GameEpisode::VendingMachine)
-            playCutscene(1);
-          else if (m_nextEpisode == GameEpisode::Survival)
-            playCutscene(2);
-          else if (m_nextEpisode == GameEpisode::BossFight)
-            playCutscene(3);
+          if (!m_cutsceneSkipped && !m_waitingForCutsceneReturn &&
+              m_cutsceneSkipHoldTimer == 0.0f) {
+            setupEpisode(m_nextEpisode);
+            m_waitingForCutsceneReturn = true;
+            m_cutsceneCooldown = 2.0f;
+            if (m_nextEpisode == GameEpisode::VendingMachine)
+              playCutscene(1);
+            else if (m_nextEpisode == GameEpisode::Survival)
+              playCutscene(2);
+            else if (m_nextEpisode == GameEpisode::BossFight)
+              playCutscene(3);
+          }
 
-          m_isFadingIn = true;
-          m_fadeAlpha = 255.0f;
-          m_isFadingOut = false;
-
-          m_loadingText.setScale({1.0f, 1.0f});
-          textColor.a = 255;
-          m_loadingText.setFillColor(textColor);
-
-          m_gameClock.restart();
+          if (m_cutsceneSkipped && !m_isFadingOut) {
+            m_isFadingOut = true;
+            m_fadeAlpha = 0.0f;
+          }
         }
       }
+      break;
+    }
+
+    case GameState::StoryScreen: {
+      if (!m_typewriterDone) {
+        m_typewriterTimer += dt.asSeconds();
+        while (m_typewriterTimer >= m_typewriterSpeed &&
+               m_typewriterIndex < m_storyTextFull.getSize()) {
+          m_typewriterTimer -= m_typewriterSpeed;
+          m_storyTextVisible += m_storyTextFull[m_typewriterIndex];
+          m_typewriterIndex++;
+        }
+        if (m_typewriterIndex >= m_storyTextFull.getSize()) {
+          m_typewriterDone = true;
+        }
+      }
+      break;
+    }
+
+    case GameState::Disclaimer: {
       break;
     }
     }
@@ -1411,6 +1735,20 @@ void Game::run() {
 
     if (m_currentGameState == GameState::Controls) {
       m_menu.draw(m_gameWindow, m_currentGameState);
+    } else if (m_currentGameState == GameState::Disclaimer) {
+      drawDisclaimerScreen(currentW, currentH);
+    } else if (m_isStoryActive) {
+      drawStoryScreen(currentW, currentH);
+      if (m_currentGameState != GameState::StoryScreen) {
+        sf::RectangleShape dimRect((sf::Vector2f)m_gameWindow.getSize());
+        dimRect.setFillColor(sf::Color(0, 0, 0, 150));
+        m_gameWindow.draw(dimRect);
+
+        sf::View oldView = m_gameWindow.getView();
+        m_menu.setGlobalAlpha(255);
+        m_menu.draw(m_gameWindow, m_currentGameState);
+        m_gameWindow.setView(oldView);
+      }
     } else if (m_currentGameState == GameState::EpisodeTransition) {
       if (m_nextEpisode == GameEpisode::Victory) {
         m_gameWindow.draw(m_bgSprite);
@@ -1418,8 +1756,110 @@ void Game::run() {
       }
 
       m_gameWindow.draw(m_loadingText);
+
+      if (m_nextEpisode != GameEpisode::Victory) {
+        if (m_waitingForCutsceneReturn) {
+          bool ua = m_gameSettings.ukrainianLanguage;
+          sf::Text waitText(ua ? m_loadingFontUA : m_loadingFont);
+          waitText.setCharacterSize(24);
+          waitText.setFillColor(sf::Color::White);
+          waitText.setOutlineColor(sf::Color::Black);
+          waitText.setOutlineThickness(2.0f);
+
+          int cutsceneNum = 1;
+          if (m_nextEpisode == GameEpisode::Survival)
+            cutsceneNum = 2;
+          else if (m_nextEpisode == GameEpisode::BossFight)
+            cutsceneNum = 3;
+
+          std::string strWait =
+              ua ? "Катсцена відкривається у зовнішньому плеєрі...\n(Якщо "
+                   "відео не запустилось, ви можете переглянути його в папці "
+                   "assets/videos/Cutscene_" +
+                       std::to_string(cutsceneNum) + ".mp4)"
+                 : "Cutscene is opening in an external player...\n(If video "
+                   "did not start, you can view it in assets/videos/Cutscene_" +
+                       std::to_string(cutsceneNum) + ".mp4)";
+
+          std::string strConfirm =
+              ua ? "\n\n[ Натисніть Enter, щоб продовжити ]"
+                 : "\n\n[ Press Enter to continue ]";
+          if (m_inputMode == InputMode::Gamepad) {
+            strConfirm =
+                ua ? "\n\n[ Натисніть Кнопку A (PlayStation: X), щоб "
+                     "продовжити ]"
+                   : "\n\n[ Press Button A (PlayStation: X) to continue ]";
+          }
+          strWait += strConfirm;
+
+          waitText.setString(
+              sf::String::fromUtf8(strWait.begin(), strWait.end()));
+          sf::FloatRect bounds = waitText.getLocalBounds();
+          waitText.setOrigin({bounds.position.x + bounds.size.x / 2.0f,
+                              bounds.position.y + bounds.size.y / 2.0f});
+          waitText.setPosition({currentW / 2.0f, currentH * 0.85f});
+          m_gameWindow.draw(waitText);
+        } else {
+          bool ua = m_gameSettings.ukrainianLanguage;
+          sf::Text skipText(m_gameSettings.ukrainianLanguage ? m_loadingFontUA
+                                                             : m_loadingFont);
+          skipText.setCharacterSize(22);
+          skipText.setFillColor(sf::Color(200, 200, 200, 180));
+
+          std::string str;
+          if (m_inputMode == InputMode::Gamepad) {
+            str = ua ? "[Тримайте Кнопку A (PlayStation: X), щоб пропустити "
+                       "катсцену]"
+                     : "[Hold Button A (PlayStation: X) to skip cutscene]";
+          } else {
+            str = ua ? "[Тримайте Enter, щоб пропустити катсцену]"
+                     : "[Hold Enter to skip cutscene]";
+          }
+
+          if (m_cutsceneSkipped ||
+              (m_skipTextAnimating && m_skipTextAnimTimer >= 2.0f)) {
+            str =
+                ua ? "[Катсцену буде пропущено]" : "[Cutscene will be skipped]";
+            skipText.setFillColor(sf::Color(255, 200, 100, 230));
+          }
+
+          skipText.setString(sf::String::fromUtf8(str.begin(), str.end()));
+
+          sf::FloatRect skipBounds = skipText.getLocalBounds();
+          skipText.setOrigin({skipBounds.position.x + skipBounds.size.x,
+                              skipBounds.position.y + skipBounds.size.y});
+
+          skipText.setPosition({currentW - 30.f, currentH - 45.f});
+          m_gameWindow.draw(skipText);
+
+          if (m_skipTextAnimating && !m_cutsceneSkipped &&
+              m_skipTextAnimTimer < 2.0f) {
+            float progress = std::min(m_cutsceneSkipHoldTimer / 1.0f, 1.0f);
+            float barWidth = skipBounds.size.x;
+            float barHeight = 6.f;
+
+            sf::RectangleShape barBg(sf::Vector2f(barWidth, barHeight));
+            barBg.setOrigin({barWidth, 0});
+            barBg.setPosition({currentW - 30.f, currentH - 35.f});
+            barBg.setFillColor(sf::Color::Transparent);
+            barBg.setOutlineThickness(1.f);
+            barBg.setOutlineColor(sf::Color(200, 200, 200, 180));
+
+            sf::RectangleShape barFill(
+                sf::Vector2f(barWidth * progress, barHeight));
+            barFill.setPosition({currentW - 30.f - barWidth, currentH - 35.f});
+            barFill.setFillColor(sf::Color(255, 220, 100, 230));
+
+            m_gameWindow.draw(barBg);
+            m_gameWindow.draw(barFill);
+          }
+        }
+      }
     } else {
       m_gameWindow.draw(m_bgSprite);
+      if (m_bgSprite2) {
+        m_gameWindow.draw(*m_bgSprite2);
+      }
 
       if (m_currentGameState == GameState::Playing ||
           m_currentGameState == GameState::Paused ||
@@ -1563,11 +2003,12 @@ void Game::run() {
           m_gameWindow.setView(oldView);
         }
       }
-      if (!m_fpsFontIsLoaded)
-        m_gameWindow.draw(m_fpsErrorRect);
-      else if (m_gameSettings.showFps)
-        m_gameWindow.draw(m_fpsText);
     }
+
+    if (!m_fpsFontIsLoaded)
+      m_gameWindow.draw(m_fpsErrorRect);
+    else if (m_gameSettings.showFps)
+      m_gameWindow.draw(m_fpsText);
 
     if (m_fadeAlpha > 0.0f) {
       m_gameWindow.draw(m_fadeRect);
@@ -1738,9 +2179,7 @@ void Game::setupEpisode(GameEpisode episode) {
     m_currentLeftWall = 0.0f;
     m_currentRightWall = 0.0f;
     m_currentTopWall = 0.0f;
-    //!
     m_episodeDuration = 240.0f;
-    //!
 
     m_player.startNextEpisode(m_currentWindowSize.x / 2.0f,
                               m_currentWindowSize.y - 200.0f);
@@ -1752,74 +2191,69 @@ void Game::setupEpisode(GameEpisode episode) {
   } break;
   }
   m_bgSprite.setTexture(m_bgTexture, true);
+  m_bgSprite.setPosition({0.0f, 0.0f});
 
   float m_bgScaleX = static_cast<float>(m_currentWindowSize.x) /
                      static_cast<float>(m_bgTexture.getSize().x);
   float m_bgScaleY = static_cast<float>(m_currentWindowSize.y) /
                      static_cast<float>(m_bgTexture.getSize().y);
   m_bgSprite.setScale({m_bgScaleX, m_bgScaleY});
+
+  if (m_currentEpisode == GameEpisode::VendingMachine) {
+    m_bgSprite2.emplace(m_bgTexture);
+    m_bgSprite2->setScale({m_bgScaleX, m_bgScaleY});
+    m_bgSprite2->setPosition(
+        {0.0f, -static_cast<float>(m_currentWindowSize.y)});
+  } else {
+    m_bgSprite2.reset();
+  }
 }
 
 void Game::startTransition(GameEpisode nextEpisode) {
   m_nextEpisode = nextEpisode;
   m_currentGameState = GameState::EpisodeTransition;
-  m_transitionTimer = 10.0f;
+  m_transitionTimer = 5.0f;
   m_player.stopSound();
   m_boss.stopSound();
   m_menu.updateMusicVolume(false);
   m_transitionSound.setVolume(50.0f);
 
-  if (m_transitionSound.getStatus() != sf::Sound::Status::Playing)
-    m_transitionSound.play();
+  m_cutsceneSkipped = false;
+  m_cutsceneSkipHoldTimer = 0.f;
+  m_skipTextAnimating = false;
+  m_skipTextAnimTimer = 0.f;
+  m_waitingForCutsceneReturn = false;
+  m_cutsceneCooldown = 0.0f;
+
+  if (m_blackScreenDelay <= 0.0f) {
+    if (m_transitionSound.getStatus() != sf::Sound::Status::Playing)
+      m_transitionSound.play();
+  }
+
+  bool ua = m_gameSettings.ukrainianLanguage;
+  m_loadingText.setFont(ua ? m_loadingFontUA : m_loadingFont);
 
   if (m_nextEpisode == GameEpisode::VendingMachine) {
-    m_loadingText.setFont(m_gameSettings.ukrainianLanguage ? m_loadingFontUA
-                                                           : m_loadingFont);
-    if (m_gameSettings.ukrainianLanguage)
+    if (ua)
       m_loadingText.setString(
-          U"\u0415\u043F\u0456\u0437\u043E\u0434 1 - "
-          U"\u041D\u0430\u0440\u043E\u0434\u0436\u0435\u043D\u043D\u044F\n\n"
-          U"\u0412\u0456\u0434\u0435\u043E "
-          U"\u043E\u0441\u044C-\u043E\u0441\u044C "
-          U"\u043F\u043E\u0447\u043D\u0435\u0442\u044C\u0441\u044F...\n("
-          U"\u0413\u0440\u0430 "
-          U"\u043F\u043E\u0441\u0442\u0430\u0432\u0438\u0442\u044C\u0441\u044F "
-          U"\u043D\u0430 \u043F\u0430\u0443\u0437\u0443)");
+          U"\u0415\u043f\u0456\u0437\u043e\u0434 1 \u2013 "
+          U"\u041d\u0430\u0440\u043e\u0434\u0436\u0435\u043d\u043d\u044f");
     else
-      m_loadingText.setString("Episode 1 - Birth\n\nVideo starts "
-                              "soon...\n(Game will pause automatically)");
+      m_loadingText.setString(U"Episode 1 \u2013 Birth");
   } else if (m_nextEpisode == GameEpisode::Survival) {
-    m_loadingText.setFont(m_gameSettings.ukrainianLanguage ? m_loadingFontUA
-                                                           : m_loadingFont);
-    if (m_gameSettings.ukrainianLanguage)
-      m_loadingText.setString(
-          U"\u0415\u043F\u0456\u0437\u043E\u0434 2 - "
-          U"\u0421\u043F\u0440\u0430\u0433\u0430\n\n\u0412\u0456\u0434\u0435"
-          U"\u043E \u043E\u0441\u044C-\u043E\u0441\u044C "
-          U"\u043F\u043E\u0447\u043D\u0435\u0442\u044C\u0441\u044F...\n("
-          U"\u0413\u0440\u0430 "
-          U"\u043F\u043E\u0441\u0442\u0430\u0432\u0438\u0442\u044C\u0441\u044F "
-          U"\u043D\u0430 \u043F\u0430\u0443\u0437\u0443)");
+    if (ua)
+      m_loadingText.setString(U"\u0415\u043f\u0456\u0437\u043e\u0434 2 \u2013 "
+                              U"\u0421\u043f\u0440\u0430\u0433\u0430");
     else
-      m_loadingText.setString("Episode 2 - Thirst\n\nVideo starts "
-                              "soon...\n(Game will pause automatically)");
+      m_loadingText.setString(U"Episode 2 \u2013 Thirst");
     m_transitionSound.play();
   } else if (m_nextEpisode == GameEpisode::BossFight) {
-    m_loadingText.setFont(m_gameSettings.ukrainianLanguage ? m_loadingFontUA
-                                                           : m_loadingFont);
-    if (m_gameSettings.ukrainianLanguage)
+    if (ua)
       m_loadingText.setString(
-          U"\u0415\u043F\u0456\u0437\u043E\u0434 3 - "
-          U"\u041F\u0420\u0418\u0411\u0418\u0420\u0410\u041D\u041D\u042F!"
-          U"\n\n\u0412\u0456\u0434\u0435\u043E "
-          U"\u043E\u0441\u044C-\u043E\u0441\u044C "
-          U"\u043F\u043E\u0447\u043D\u0435\u0442\u044C\u0441\u044F...\n("
-          U"\u0413\u0440\u0430 "
-          U"\u043F\u043E\u0441\u0442\u0430\u0432\u0438\u0442\u044C\u0441\u044F "
-          U"\u043D\u0430 \u043F\u0430\u0443\u0437\u0443)");
+          U"\u0415\u043f\u0456\u0437\u043e\u0434 3 \u2013 "
+          U"\u041f\u0420\u0418\u0411\u0418\u0420\u0410\u041d\u041d\u042f!");
     else
-      m_loadingText.setString("Episode 3 - CLEANING!\n\nVideo starts "
-                              "soon...\n(Game will pause automatically)");
+      m_loadingText.setString(U"Episode 3 \u2013 CLEANING!");
     m_transitionSound.play();
   } else if (m_nextEpisode == GameEpisode::Victory) {
     if (!m_bgTexture.loadFromFile("assets/images/Victory_bg.jpg"))
@@ -1833,21 +2267,20 @@ void Game::startTransition(GameEpisode nextEpisode) {
     m_bgSprite.setScale({scaleX, scaleY});
 
     m_loadingText.setCharacterSize(200);
-    m_loadingText.setFont(m_gameSettings.ukrainianLanguage ? m_loadingFontUA
-                                                           : m_loadingFont);
-    if (m_gameSettings.ukrainianLanguage)
-      m_loadingText.setString(
-          U"\u0412\u0438 "
-          U"\u0432\u0438\u0436\u0438\u043B\u0438!\n\u0414\u0430\u043B\u0456 "
-          U"\u0431\u0443\u0434\u0435...\n\n(\u0411\u0443\u0434\u0435 "
-          U"\u0437\u0456\u0433\u0440\u0430\u043D\u043E "
-          U"\u043A\u0430\u0442\u0441\u0446\u0435\u043D\u0443 "
-          U"4)\n\u041D\u0430\u0442\u0438\u0441\u043D\u0438 Enter "
-          U"\u0449\u043E\u0431 "
-          U"\u043F\u0440\u043E\u0434\u043E\u0432\u0436\u0438\u0442\u0438");
-    else
-      m_loadingText.setString("You Survived!\nTo be continued...\n\n(Cutscene "
-                              "4 will be played)\nPress Enter to proceed");
+    m_loadingText.setFont(ua ? m_loadingFontUA : m_loadingFont);
+    std::string str;
+    if (m_inputMode == InputMode::Gamepad) {
+      str = ua ? "Ви вижили!\nДалі буде...\n\n(Буде зіграно катсцену 4)\n[ "
+                 "Натисніть Кнопку A (PS: X), щоб продовжити ]"
+               : "You Survived!\nTo be continued...\n\n(Cutscene 4 will be "
+                 "played)\n[ Press Button A (PS: X) to proceed ]";
+    } else {
+      str = ua ? "Ви вижили!\nДалі буде...\n\n(Буде зіграно катсцену 4)\n[ "
+                 "Натисніть Enter, щоб продовжити ]"
+               : "You Survived!\nTo be continued...\n\n(Cutscene 4 will be "
+                 "played)\n[ Press Enter to proceed ]";
+    }
+    m_loadingText.setString(sf::String::fromUtf8(str.begin(), str.end()));
 
     sf::FloatRect textRect = m_loadingText.getLocalBounds();
     m_loadingText.setOrigin({textRect.position.x + textRect.size.x / 2.0f,
@@ -1885,6 +2318,7 @@ void Game::startFadeOut(GameEpisode nextEpisode) {
   m_isFadingOut = true;
   m_fadeAlpha = 0.0f;
   m_goToMenuAfterFade = false;
+  m_goToStoryAfterFade = true;
 }
 
 void Game::startFadeOutToMenu() {
@@ -1909,8 +2343,6 @@ void Game::playCutscene(int episodeNumber) {
   case 4:
     videoPath = "assets/videos/Cutscene_4.mp4";
     break;
-  default:
-    return;
   }
   std::string command = "start " + videoPath;
   std::system(command.c_str());
@@ -1926,25 +2358,42 @@ void Game::handleMenuAction(int actionId, float currentW, float currentH) {
       if (!m_isFadingIn && !m_isFadingOut) {
         if (m_gameStartSound.getStatus() != sf::Sound::Status::Playing)
           m_gameStartSound.play();
-        startFadeOut(GameEpisode::VendingMachine);
+        m_isFadingOut = true;
+        m_fadeAlpha = 0.0f;
+        m_goToMenuAfterFade = false;
+        m_nextEpisodeAfterFade = GameEpisode::VendingMachine;
+        m_fromGameOver = false;
       }
     } else if (m_currentGameState == GameState::GameOver) {
       if (!m_isFadingIn && !m_isFadingOut) {
         if (m_gameStartSound.getStatus() != sf::Sound::Status::Playing)
           m_gameStartSound.play();
+        m_fromGameOver = true;
         startNewGame(false);
       }
     } else if (m_currentGameState == GameState::Paused) {
-      m_currentGameState = GameState::Playing;
+      m_currentGameState = m_lastGameState;
     }
-    if (m_gameSettings.playMusic) {
-      m_Episode1Music.setVolume(30.0f);
-      m_Episode2Music.setVolume(30.0f);
-      m_Episode3Music.setVolume(45.0f);
-    } else {
-      m_Episode1Music.setVolume(0);
-      m_Episode2Music.setVolume(0);
-      m_Episode3Music.setVolume(0);
+
+    if (m_currentGameState == GameState::Playing) {
+      if (m_gameSettings.playMusic) {
+        m_Episode1Music.setVolume(30.0f);
+        m_Episode2Music.setVolume(30.0f);
+        m_Episode3Music.setVolume(45.0f);
+      } else {
+        m_Episode1Music.setVolume(0);
+        m_Episode2Music.setVolume(0);
+        m_Episode3Music.setVolume(0);
+      }
+
+      if (m_isPlayerDying) {
+        if (m_deathFizzSound.getStatus() == sf::Sound::Status::Paused)
+          m_deathFizzSound.play();
+        if (m_deathSound.getStatus() == sf::Sound::Status::Paused)
+          m_deathSound.play();
+        if (m_cookieSound.getStatus() == sf::Sound::Status::Paused)
+          m_cookieSound.play();
+      }
     }
     m_menu.setupMenuButtons(m_currentGameState, m_currentWindowSize.x,
                             m_currentWindowSize.y, m_gameSettings,
@@ -2074,4 +2523,174 @@ void Game::setVibration(float left, float right) {
   (void)left;
   (void)right;
 #endif
+}
+
+//! DISCLAIMER SCREEN
+void Game::drawDisclaimerScreen(float currentW, float currentH) {
+  bool ua = m_gameSettings.ukrainianLanguage;
+  const sf::Font &font = ua ? m_menu.getFontUA() : m_menu.getFont();
+
+  std::string warningStr;
+  std::string disclaimerStr;
+  std::string dodgeStr;
+
+  if (ua) {
+    warningStr = "!!! УВАГА: ФОТОЧУТЛИВІСТЬ !!!\n"
+                 "Ця гра містить спалахи світла та яскраві кольори,\n"
+                 "які можуть вплинути на людей з епілепсією.\n"
+                 "Якщо ви схильні до нападів - проконсультуйтесь з лікарем.\n";
+
+    disclaimerStr =
+        "КАТСЦЕНИ:\n"
+        "Через технічні обмеження рушія, сюжетні відео-катсцени відтворюються\n"
+        "у вашому зовнішньому медіа-плеєрі перед кожним епізодом.\n"
+        "Відео будуть відкриватись вашим плеєром за замовчуванням.\n"
+        "Їх потрібно подивитись, щоб зрозуміти сюжет.\n\n"
+        "МЕДІА-МАТЕРІАЛИ:\n"
+        "Всі фони та відео були згенеровані за допомогою штучного "
+        "інтелекту.\n\n"
+        "КЕРУВАННЯ:\n"
+        "В кожному епізоді буде РІЗНА механіка керування.";
+
+    dodgeStr = "ГОЛОВНЕ, ЩО ВАМ ТРЕБА ЗНАТИ: УХИЛЯЙТЕСЬ!";
+  } else {
+    warningStr = "!!! WARNING: PHOTOSENSITIVITY !!!\n"
+                 "This game contains flashing lights and bright colors\n"
+                 "that may affect people with epilepsy or photosensitivity.\n"
+                 "If you are prone to seizures, please consult a doctor.\n";
+
+    disclaimerStr =
+        "CUTSCENES:\n"
+        "Due to engine limitations, story cutscene videos\n"
+        "are played in your external media player before each episode.\n"
+        "Videos will be opened by your default player.\n"
+        "They are required to understand the plot.\n\n"
+        "MEDIA CONTENT:\n"
+        "All backgrounds and videos were generated using artificial "
+        "intelligence.\n\n"
+        "CONTROLS:\n"
+        "Each episode will have a DIFFERENT gameplay mechanic.";
+
+    dodgeStr = "THE MAIN THING TO KNOW: DODGE!";
+  }
+
+  sf::Text warningText(font);
+  warningText.setCharacterSize(32);
+  warningText.setFillColor(sf::Color(255, 230, 80));
+  warningText.setString(
+      sf::String::fromUtf8(warningStr.begin(), warningStr.end()));
+  warningText.setLineSpacing(1.3f);
+  sf::FloatRect wBounds = warningText.getLocalBounds();
+  warningText.setOrigin(
+      {wBounds.position.x + wBounds.size.x / 2.f, wBounds.position.y});
+  warningText.setPosition({currentW / 2.f, 40.f});
+  m_gameWindow.draw(warningText);
+
+  sf::Text mainText(font);
+  mainText.setCharacterSize(30);
+  mainText.setFillColor(sf::Color::White);
+  mainText.setString(
+      sf::String::fromUtf8(disclaimerStr.begin(), disclaimerStr.end()));
+  mainText.setLineSpacing(1.3f);
+  sf::FloatRect bounds = mainText.getLocalBounds();
+  mainText.setOrigin(
+      {bounds.position.x + bounds.size.x / 2.f, bounds.position.y});
+  mainText.setPosition({currentW / 2.f, 40.f + wBounds.size.y + 15.f});
+  m_gameWindow.draw(mainText);
+
+  std::string confirmStr;
+  if (m_inputMode == InputMode::Gamepad) {
+    confirmStr =
+        ua ? "[ Щоб продовжити натисніть Кнопку A (PlayStation: X) ]\n"
+             "[ Щоб повернутись в меню натисніть Кнопку B (PlayStation: O) ]"
+           : "[ To continue press Button A (PlayStation: X) ]\n"
+             "[ To return to menu press Button B (PlayStation: O) ]";
+  } else {
+    confirmStr = ua ? "[ Щоб продовжити натисніть Enter ]\n"
+                      "[ Щоб повернутись в меню натисніть Escape ]"
+                    : "[ To continue press Enter ]\n"
+                      "[ To return to menu press Escape ]";
+  }
+
+  sf::Text confirmText(font);
+  confirmText.setCharacterSize(28);
+  confirmText.setLineSpacing(1.3f);
+
+  float pulse =
+      std::sin(m_gameClock.getElapsedTime().asSeconds() * 3.f) * 0.5f + 0.5f;
+  uint8_t ca = static_cast<uint8_t>(160 + pulse * 95);
+  confirmText.setFillColor(sf::Color(255, 220, 100, ca));
+  confirmText.setString(
+      sf::String::fromUtf8(confirmStr.begin(), confirmStr.end()));
+
+  sf::FloatRect cBounds = confirmText.getLocalBounds();
+  confirmText.setOrigin({cBounds.position.x + cBounds.size.x / 2.f,
+                         cBounds.position.y + cBounds.size.y});
+  confirmText.setPosition({currentW / 2.f, currentH - 30.f});
+
+  sf::Text dodgeText(font);
+  dodgeText.setCharacterSize(30);
+  dodgeText.setFillColor(sf::Color::White);
+  dodgeText.setString(sf::String::fromUtf8(dodgeStr.begin(), dodgeStr.end()));
+  sf::FloatRect dBounds = dodgeText.getLocalBounds();
+  dodgeText.setOrigin({dBounds.position.x + dBounds.size.x / 2.f,
+                       dBounds.position.y + dBounds.size.y / 2.f});
+
+  float mainTextBottom = mainText.getPosition().y + bounds.size.y;
+  float confirmTextTop = confirmText.getPosition().y - cBounds.size.y;
+  float middleY = mainTextBottom + (confirmTextTop - mainTextBottom) / 2.f;
+  dodgeText.setPosition({currentW / 2.f, middleY});
+
+  m_gameWindow.draw(dodgeText);
+  m_gameWindow.draw(confirmText);
+}
+
+//! STORY SCREEN
+void Game::drawStoryScreen(float currentW, float currentH) {
+  bool ua = m_gameSettings.ukrainianLanguage;
+  const sf::Font &font = ua ? m_loadingFontUA : m_loadingFont;
+
+  sf::Text storyText(font);
+  storyText.setCharacterSize(26);
+  storyText.setFillColor(sf::Color::White);
+  storyText.setString(m_storyTextVisible);
+  storyText.setLineSpacing(1.4f);
+
+  sf::Text fullText(font);
+  fullText.setCharacterSize(26);
+  fullText.setString(m_storyTextFull);
+  fullText.setLineSpacing(1.4f);
+
+  sf::FloatRect fullBounds = fullText.getLocalBounds();
+  storyText.setOrigin(
+      {fullBounds.position.x + fullBounds.size.x / 2.f, fullBounds.position.y});
+  storyText.setPosition({currentW / 2.f, 80.f});
+  m_gameWindow.draw(storyText);
+
+  if (m_typewriterDone) {
+    std::string continueStr;
+    if (m_inputMode == InputMode::Gamepad) {
+      continueStr =
+          ua ? "[ Натисніть Кнопку A (PlayStation: X), щоб продовжити ]"
+             : "[ Press Button A (PlayStation: X) to continue ]";
+    } else {
+      continueStr = ua ? "[ Натисніть Enter, щоб продовжити ]"
+                       : "[ Press Enter to continue ]";
+    }
+
+    sf::Text continueText(font);
+    continueText.setCharacterSize(26);
+    float pulse =
+        std::sin(m_gameClock.getElapsedTime().asSeconds() * 3.f) * 0.5f + 0.5f;
+    uint8_t ca = static_cast<uint8_t>(160 + pulse * 95);
+    continueText.setFillColor(sf::Color(255, 220, 100, ca));
+    continueText.setString(
+        sf::String::fromUtf8(continueStr.begin(), continueStr.end()));
+
+    sf::FloatRect cBounds = continueText.getLocalBounds();
+    continueText.setOrigin({cBounds.position.x + cBounds.size.x / 2.f,
+                            cBounds.position.y + cBounds.size.y});
+    continueText.setPosition({currentW / 2.f, currentH - 40.f});
+    m_gameWindow.draw(continueText);
+  }
 }

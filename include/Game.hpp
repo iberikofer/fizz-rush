@@ -5,17 +5,12 @@
 #include "Player.hpp"
 #include "Settings.hpp"
 #include <SFML/Graphics.hpp>
+#include <optional>
+#include <string>
 
 enum class GameEpisode { VendingMachine, Survival, BossFight, Victory };
 
-enum class PadBtn {
-  A = 0,
-  B = 1,
-  X = 2,
-  Y = 3,
-  Select = 6,
-  Start = 7
-};
+enum class PadBtn { A = 0, B = 1, X = 2, Y = 3, Select = 6, Start = 7 };
 
 struct HeartPickup {
   HeartPickup(const sf::Texture &texture) : healSprite(texture) {}
@@ -29,6 +24,10 @@ class Game {
 public:
   Game();
   void run();
+
+  PadBtn mapJoystickButtonToPadBtn(unsigned int joystickId,
+                                   unsigned int buttonId);
+  bool isPadButtonPressed(unsigned int joystickId, PadBtn btn);
 
 private:
   //* SETTINGS
@@ -114,6 +113,7 @@ private:
   void updateSfxVolume(bool playSfx);
   sf::RectangleShape m_fadeRect;
   float m_fadeAlpha;
+  float m_blackScreenDelay = 0.0f;
   bool m_isFadingOut;
   GameEpisode m_nextEpisodeAfterFade;
   void startFadeOut(GameEpisode nextEpisode);
@@ -147,7 +147,7 @@ private:
   void setVibration(float left, float right);
   float m_rumbleTimer = 0.f;
   bool m_bossRumbleActive = false;
-  
+
   //* Player Death Animation State
   sf::SoundBuffer m_deathFizzSoundBuffer;
   sf::Sound m_deathFizzSound;
@@ -168,4 +168,31 @@ private:
   //? Pending menu action for smooth animations
   int m_pendingMenuAction = -1;
   float m_pendingMenuTimer = 0.f;
+
+  //* === SCROLLING BACKGROUND (Episode 1) ===
+  std::optional<sf::Sprite> m_bgSprite2;
+  float m_bgScrollSpeed = 40.0f;
+
+  //* === DISCLAIMER SCREEN ===
+  void drawDisclaimerScreen(float currentW, float currentH);
+
+  //* === STORY SCREEN ===
+  void drawStoryScreen(float currentW, float currentH);
+  sf::String m_storyTextFull;
+  sf::String m_storyTextVisible;
+  float m_typewriterTimer = 0.f;
+  float m_typewriterSpeed = 0.05f;
+  size_t m_typewriterIndex = 0;
+  bool m_typewriterDone = false;
+  bool m_isStoryActive = false;
+
+  //* === EPISODE TITLE & CUTSCENE SKIP ===
+  float m_cutsceneSkipHoldTimer = 0.f;
+  bool m_cutsceneSkipped = false;
+  bool m_skipTextAnimating = false;
+  float m_skipTextAnimTimer = 0.f;
+  bool m_waitingForCutsceneReturn;
+  float m_cutsceneCooldown = 0.0f;
+  bool m_goToStoryAfterFade = false;
+  bool m_fromGameOver = false;
 };
