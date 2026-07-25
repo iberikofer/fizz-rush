@@ -15,9 +15,9 @@ Menu::Menu(float winWidth, float winHeight)
       m_FPSCounterValueText(m_menuFont), m_hitboxText(m_menuFont),
       m_hitboxValueText(m_menuFont), m_languageText(m_menuFont),
       m_languageValueText(m_menuFont), m_controlsButtonText(m_menuFont),
-      m_backButtonText(m_menuFont), m_controlsTitle(m_menuFont),
+      m_backButtonText(m_menuFont), m_sfxText(m_menuFont),
+      m_sfxValueText(m_menuFont), m_controlsTitle(m_menuFont),
       m_controlsContent(m_menuFont), m_controlsBackText(m_menuFont),
-      m_sfxText(m_menuFont), m_sfxValueText(m_menuFont),
       m_menuMusic(m_menuMusicBuffer) {
   m_playButtonText.setCharacterSize(60);
   m_playButtonText.setFillColor(sf::Color(255, 220, 0));
@@ -409,32 +409,29 @@ void Menu::setupMenuButtons(GameState m_gameState, float winWidth,
           U"\u0425\u0440\u0435\u0441\u0442\u043e\u0432\u0438\u043d\u0430\n"
           U"\u041f\u0456\u0434\u0442\u0432\u0435\u0440\u0434\u0438\u0442\u0438:"
           U" \u041a\u043b\u0456\u043a \u043c\u0438\u0448\u0456 / Enter / "
-          U"\u041a\u043d\u043e\u043f\u043a\u0430 A\n"
-          U"\u041d\u0430\u0437\u0430\u0434 / \u041f\u0430\u0443\u0437\u0430: "
-          U"Esc / \u041a\u043d\u043e\u043f\u043a\u0430 B / Start\n"
+          U"\u041a\u043d\u043e\u043f\u043a\u0430 A (PlayStation: X)\n"
+          U"\u041d\u0430\u0437\u0430\u0434/\u041f\u0430\u0443\u0437\u0430: "
+          U"Esc / \u041a\u043d\u043e\u043f\u043a\u0430 B (PlayStation: O) / Start\n"
           U"\u041f\u043e\u0432\u043d\u0438\u0439 "
           U"\u0435\u043a\u0440\u0430\u043d: F11\n\n"
-          U"\u2139 \u0423\u0441\u0456 \u0435\u043a\u0440\u0430\u043d\u0438 "
-          U"\u043c\u0435\u043d\u044e "
-          U"\u043f\u0456\u0434\u0442\u0440\u0438\u043c\u0443\u044e\u0442\u044c"
-          U"\n"
-          U"  \u043c\u0438\u0448\u043a\u0443, "
-          U"\u043a\u043b\u0430\u0432\u0456\u0430\u0442\u0443\u0440\u0443 "
+          U"\u0423\u0441\u0456 \u0435\u043a\u0440\u0430\u043d\u0438 \u043c\u0435\u043d\u044e "
+          U"\u043f\u0456\u0434\u0442\u0440\u0438\u043c\u0443\u044e\u0442\u044c "
+          U"\u043c\u0438\u0448\u043a\u0443, \u043a\u043b\u0430\u0432\u0456\u0430\u0442\u0443\u0440\u0443 "
           U"\u0442\u0430 \u0434\u0436\u043e\u0439\u0441\u0442\u0438\u043a.";
     } else {
       content = U"Movement: WASD / Arrow Keys / Left Stick\n"
                 U"Menu Navigation: Mouse / Arrows / Left Stick / D-Pad\n"
-                U"Confirm/Select: Mouse Click / Enter / Button A\n"
-                U"Back / Pause: Esc / Button B / Start\n"
+                U"Confirm/Select: Mouse Click / Enter / Button A (PlayStation: X)\n"
+                U"Back/Pause: Esc / Button B (PlayStation: O) / Start\n"
                 U"Fullscreen: F11\n\n"
-                U"\u2139 All menu screens support Mouse,\n"
-                U"  Keyboard and Gamepad navigation.";
+                U"All menu screens support Mouse, Keyboard and Gamepad navigation.";
     }
     m_controlsContent.setString(content);
     m_controlsContent.setCharacterSize(42);
     m_controlsContent.setFillColor(sf::Color::White);
     m_controlsContent.setOutlineColor(sf::Color::Black);
     m_controlsContent.setOutlineThickness(2.5f);
+    m_controlsContent.setLineSpacing(1.6f);
     sf::FloatRect cr = m_controlsContent.getLocalBounds();
     m_controlsContent.setOrigin(
         {cr.position.x + cr.size.x / 2.f, cr.position.y});
@@ -483,7 +480,7 @@ void Menu::setupMenuButtons(GameState m_gameState, float winWidth,
       m_menuMusic.stop();
     }
 
-    float uniformWidth = ua ? 820.0f : 550.0f;
+    float uniformWidth = ua ? 760.0f : 550.0f;
 
     //* 2-Column layout
     float startY = winHeight / 2.0f - 140.0f;
@@ -917,8 +914,6 @@ void Menu::draw(sf::RenderWindow &window, GameState m_gameState) {
   if (showBGSprite)
     window.draw(m_menuBGSprite);
 
-  //? Determine which button index is "active" (hover trumps focus in Mouse
-  //? mode)
   int activeIdx = -1;
   if (m_inputMode == InputMode::Mouse)
     activeIdx = m_hoveredButtonIndex;
@@ -1016,7 +1011,7 @@ void Menu::draw(sf::RenderWindow &window, GameState m_gameState) {
   if (m_gameState == GameState::Settings) {
     //? Settings buttons with focus outlines
     //? Order: Lang(0), Controls(1), Diff(2), VSync(3), Music(4), FPS(5),
-    // Hitbox(6), Back(7)
+    //? Hitbox(6), Back(7)
     struct {
       sf::RectangleShape *btn;
       sf::Text *t1;

@@ -27,15 +27,16 @@ Game::Game()
       m_Episode2Music(m_Episode2MusicBuffer),
       m_Episode3Music(m_Episode3MusicBuffer),
       m_transitionSound(m_transitionSoundBuffer), m_winSound(m_winSoundBuffer),
-      m_deathFizzSound(m_deathFizzSoundBuffer), m_winMusic(m_winMusicBuffer),
-      m_deathSound(m_deathSoundBuffer), m_healSound(m_healSoundBuffer),
+      m_winMusic(m_winMusicBuffer), m_deathSound(m_deathSoundBuffer),
+      m_healSound(m_healSoundBuffer),
       m_heartSpawnSound(m_heartSpawnSoundBuffer),
       m_gameLoadingSound(m_gameLoadingSoundBuffer),
       m_gameStartSound(m_gameStartSoundBuffer),
       m_menu(static_cast<float>(sf::VideoMode::getDesktopMode().size.x),
              static_cast<float>(sf::VideoMode::getDesktopMode().size.y)),
       m_player(static_cast<float>(sf::VideoMode::getDesktopMode().size.x),
-               static_cast<float>(sf::VideoMode::getDesktopMode().size.y)) {
+               static_cast<float>(sf::VideoMode::getDesktopMode().size.y)),
+      m_deathFizzSound(m_deathFizzSoundBuffer) {
   m_gameSettings.loadFromFile("settings.ini");
   m_gameWindow.create(sf::VideoMode::getDesktopMode(), "Fizz Rush!",
                       sf::Style::None, sf::State::Fullscreen);
@@ -814,7 +815,7 @@ void Game::run() {
 
           if (m_deathAnimBounceCount == 0) {
             m_deathSound.play();
-            m_deathAnimVelocity.y = -250.0f;
+            m_deathAnimVelocity.y = -180.0f;
             m_deathAnimVelocity.x *= 0.5f;
             m_deathAnimBounceCount++;
             setVibration(0.8f, 0.8f);
@@ -831,7 +832,7 @@ void Game::run() {
             setVibration(0.5f, 0.5f);
             m_rumbleTimer = 0.1f;
           } else if (m_deathAnimBounceCount < 7) {
-            m_deathAnimVelocity.y = -60.0f;
+            m_deathAnimVelocity.y = -90.0f;
             m_deathAnimBounceCount++;
             setVibration(0.2f, 0.2f);
             m_rumbleTimer = 0.05f;

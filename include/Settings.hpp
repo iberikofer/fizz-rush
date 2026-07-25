@@ -39,7 +39,7 @@ struct GameSettings {
 namespace AudioConfig {
 //* Menu
 constexpr float MENU_MUSIC = 40.0f;
-constexpr float BUTTON_SELECT = 50.0f;
+constexpr float BUTTON_SELECT = 100.0f;
 constexpr float BUTTON_SWITCH = 50.0f;
 
 //* Gameplay
