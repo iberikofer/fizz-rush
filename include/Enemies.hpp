@@ -26,8 +26,7 @@ struct CookieParticle
 class Enemy
 {
 public:
-	Enemy(float enemyStartX, float enemyStartY);
-	void loadAssets();
+	Enemy(const sf::Texture &texture, float enemyStartX, float enemyStartY);
 	void spawn(float m_startPosX, float m_startPosY, float m_difficultyEnemySpeed, const sf::Texture &texture, Type type, sf::Vector2f playerPos, const sf::Texture *particleTexture = nullptr);
 	void update(sf::Time dt, float winWidth, float winHeight, float m_machineLeftWall, float m_machineRightWall, sf::Vector2f playerPos, sf::Sound &shootSound);
 	void setDifficultyParams(float enemySpeed, float enemyScale);
@@ -40,7 +39,6 @@ public:
 	bool checkCollision(const CollisionCircle &circle) const;
 
 private:
-	sf::Texture m_enemyTexture;
 	sf::Sprite m_enemySprite;
 	float m_enemySpeed;
 	std::vector<CollisionCircle> m_hitboxes;

@@ -173,6 +173,7 @@ private:
   //* === SCROLLING BACKGROUND (Episode 1) ===
   std::optional<sf::Sprite> m_bgSprite2;
   float m_bgScrollSpeed = 40.0f;
+  bool m_bgStopped = false;
 
   //* === DISCLAIMER SCREEN ===
   void drawDisclaimerScreen(float currentW, float currentH);
@@ -186,6 +187,8 @@ private:
   size_t m_typewriterIndex = 0;
   bool m_typewriterDone = false;
   bool m_isStoryActive = false;
+  sf::SoundBuffer m_typewriterSoundBuffer;
+  sf::Sound m_typewriterSound;
 
   //* === EPISODE TITLE & CUTSCENE SKIP ===
   float m_cutsceneSkipHoldTimer = 0.f;

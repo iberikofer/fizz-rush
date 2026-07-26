@@ -106,7 +106,8 @@ Game::Game()
              static_cast<float>(sf::VideoMode::getDesktopMode().size.y)),
       m_player(static_cast<float>(sf::VideoMode::getDesktopMode().size.x),
                static_cast<float>(sf::VideoMode::getDesktopMode().size.y)),
-      m_deathFizzSound(m_deathFizzSoundBuffer) {
+      m_deathFizzSound(m_deathFizzSoundBuffer),
+      m_typewriterSound(m_typewriterSoundBuffer) {
   m_gameSettings.loadFromFile("settings.ini");
   m_gameWindow.create(sf::VideoMode::getDesktopMode(), "Fizz Rush!",
                       sf::Style::None, sf::State::Fullscreen);
@@ -227,6 +228,12 @@ Game::Game()
   m_heartSpawnSound.setVolume(AudioConfig::HEART_SPAWN);
   m_gameLoadingSound.setVolume(AudioConfig::GAME_LOADING);
   m_deathFizzSound.setVolume(AudioConfig::DEATH_FIZZ);
+  if (!m_typewriterSoundBuffer.loadFromFile(
+          "assets/sound/story_typewrighter.ogg"))
+    std::cerr << "Typewriter sound error!" << std::endl;
+  m_typewriterSound.setBuffer(m_typewriterSoundBuffer);
+  m_typewriterSound.setLooping(true);
+  m_typewriterSound.setPitch(1.3f);
   m_bgSprite.setTexture(m_bgTexture, true);
   float m_bgScaleX =
       m_gameWindow.getSize().x / static_cast<float>(m_bgTexture.getSize().x);
@@ -317,12 +324,8 @@ void Game::run() {
       }
     }
 
-    if (m_menuSwitchSoundTimer > 0.0f) {
-      m_menuSwitchSoundTimer -= dt.asSeconds();
-      if (m_menuSwitchSoundTimer <= 0.0f) {
-        m_menuSwitchSound.play();
-        m_menuSwitchSoundTimer = 0.0f;
-      }
+    if (m_menu.consumeHoverSoundFlag()) {
+      m_menuSwitchSound.play();
     }
 
     m_fpsUpdateTimer += dt.asSeconds();
@@ -371,8 +374,7 @@ void Game::run() {
             m_gameWindow.mapPixelToCoords(mouseMoved->position);
         if (m_menu.updateMouseHover(worldPos.x, worldPos.y,
                                     m_currentGameState)) {
-          if (m_currentGameState != GameState::Controls)
-            m_menuSwitchSoundTimer = 0.15f;
+          // Hover sound is now handled by consumeHoverSoundFlag
         }
 
       } else if (const auto *mouseClick =
@@ -430,27 +432,24 @@ void Game::run() {
                              m_currentGameState == GameState::GameOver);
 
         if (isMenuScreen && m_pendingMenuAction == -1) {
-          bool focusChanged = false;
           if (keyPressed->code == sf::Keyboard::Key::Up ||
-              keyPressed->code == sf::Keyboard::Key::W)
-            focusChanged = m_menu.moveFocus2D(0, -1, m_currentGameState);
-          else if (keyPressed->code == sf::Keyboard::Key::Down ||
-                   keyPressed->code == sf::Keyboard::Key::S)
-            focusChanged = m_menu.moveFocus2D(0, 1, m_currentGameState);
-          else if (keyPressed->code == sf::Keyboard::Key::Left ||
+              keyPressed->code == sf::Keyboard::Key::W) {
+            m_menu.moveFocus2D(0, -1, m_currentGameState);
+          } else if (keyPressed->code == sf::Keyboard::Key::Down ||
+                   keyPressed->code == sf::Keyboard::Key::S) {
+            m_menu.moveFocus2D(0, 1, m_currentGameState);
+          } else if (keyPressed->code == sf::Keyboard::Key::Left ||
                    keyPressed->code == sf::Keyboard::Key::A) {
             if (m_currentGameState == GameState::Settings ||
                 m_currentGameState == GameState::GameOver)
-              focusChanged = m_menu.moveFocus2D(-1, 0, m_currentGameState);
+              m_menu.moveFocus2D(-1, 0, m_currentGameState);
           } else if (keyPressed->code == sf::Keyboard::Key::Right ||
                      keyPressed->code == sf::Keyboard::Key::D) {
             if (m_currentGameState == GameState::Settings ||
                 m_currentGameState == GameState::GameOver)
-              focusChanged = m_menu.moveFocus2D(1, 0, m_currentGameState);
+              m_menu.moveFocus2D(1, 0, m_currentGameState);
           }
-          if (focusChanged && m_currentGameState != GameState::Controls) {
-            m_menuSwitchSoundTimer = 0.15f;
-          }
+          // Focus sound is now handled by consumeHoverSoundFlag
         }
 
         if (keyPressed->code == sf::Keyboard::Key::Escape) {
@@ -774,25 +773,23 @@ void Game::run() {
 
       m_stickNavTimer += dt.asSeconds();
       float navRepeatDelay = 0.2f;
-      if (anyNav && m_stickNavTimer >= navRepeatDelay && m_pendingMenuAction == -1) {
+      if (anyNav && m_stickNavTimer >= navRepeatDelay &&
+          m_pendingMenuAction == -1) {
         m_stickNavTimer = 0.f;
-        bool focusChanged = false;
         if (navUp)
-          focusChanged = m_menu.moveFocus2D(0, -1, m_currentGameState);
+          m_menu.moveFocus2D(0, -1, m_currentGameState);
         else if (navDown)
-          focusChanged = m_menu.moveFocus2D(0, 1, m_currentGameState);
+          m_menu.moveFocus2D(0, 1, m_currentGameState);
         else if (navLeft) {
           if (m_currentGameState == GameState::Settings ||
               m_currentGameState == GameState::GameOver)
-            focusChanged = m_menu.moveFocus2D(-1, 0, m_currentGameState);
+            m_menu.moveFocus2D(-1, 0, m_currentGameState);
         } else if (navRight) {
           if (m_currentGameState == GameState::Settings ||
               m_currentGameState == GameState::GameOver)
-            focusChanged = m_menu.moveFocus2D(1, 0, m_currentGameState);
+            m_menu.moveFocus2D(1, 0, m_currentGameState);
         }
-        if (focusChanged && m_currentGameState != GameState::Controls) {
-          m_menuSwitchSoundTimer = 0.15f;
-        }
+        // Focus sound is now handled by consumeHoverSoundFlag
       }
       if (!anyNav)
         m_stickNavTimer = navRepeatDelay; //? allow immediate first move
@@ -1146,20 +1143,38 @@ void Game::run() {
     case GameState::Playing: {
       if (m_currentEpisode == GameEpisode::VendingMachine && m_bgSprite2) {
         if (m_player.hasPlayerMoved()) {
-          float scrollAmt = m_bgScrollSpeed * dt.asSeconds();
-          m_bgSprite.move({0.0f, -scrollAmt});
-          m_bgSprite2->move({0.0f, -scrollAmt});
-
           float bgHeight = static_cast<float>(m_bgTexture.getSize().y) *
                            m_bgSprite.getScale().y;
 
-          if (m_bgSprite.getPosition().y <= -bgHeight) {
-            m_bgSprite.setPosition(
-                {0.0f, m_bgSprite2->getPosition().y + bgHeight});
+          //? Stop bg scroll when near end of episode (last 10 sec)
+          float timeLeft = m_episodeDuration - m_currentEpisodeTime;
+          if (!m_bgStopped && timeLeft < 10.0f) {
+            //? Check if either sprite reached y=0 (top of picture at screen)
+            float p1y = m_bgSprite.getPosition().y;
+            float p2y = m_bgSprite2->getPosition().y;
+            if (p1y >= 0.0f || p2y >= 0.0f) {
+              //? Snap the closest one to 0 and freeze
+              if (p1y >= 0.0f)
+                m_bgSprite.setPosition({0.0f, 0.0f});
+              if (p2y >= 0.0f)
+                m_bgSprite2->setPosition({0.0f, -bgHeight});
+              m_bgStopped = true;
+            }
           }
-          if (m_bgSprite2->getPosition().y <= -bgHeight) {
-            m_bgSprite2->setPosition(
-                {0.0f, m_bgSprite.getPosition().y + bgHeight});
+
+          if (!m_bgStopped) {
+            float scrollAmt = m_bgScrollSpeed * dt.asSeconds();
+            m_bgSprite.move({0.0f, -scrollAmt});
+            m_bgSprite2->move({0.0f, -scrollAmt});
+
+            if (m_bgSprite.getPosition().y <= -bgHeight) {
+              m_bgSprite.setPosition(
+                  {0.0f, m_bgSprite2->getPosition().y + bgHeight});
+            }
+            if (m_bgSprite2->getPosition().y <= -bgHeight) {
+              m_bgSprite2->setPosition(
+                  {0.0f, m_bgSprite.getPosition().y + bgHeight});
+            }
           }
         }
       }
@@ -1367,11 +1382,91 @@ void Game::run() {
           }
 
           if (m_enemySpawnTimer < 0) {
-            Enemy tempEnemy(0, 0);
 
             if (m_currentEpisode == GameEpisode::VendingMachine) {
-              int spawnChance = std::rand() % 100;
-              if (spawnChance <= 20) {
+              float phase = m_currentEpisodeTime;
+
+              if (phase < 300.0f) {
+                //! PHASE 1 (0-5 min): ONLY Cans
+                Type currentType = Type::Can;
+                const sf::Texture *currentEnemyTexture = nullptr;
+                if (!m_enemyCanTextures.empty())
+                  currentEnemyTexture =
+                      &m_enemyCanTextures[std::rand() %
+                                          m_enemyCanTextures.size()];
+
+                if (currentEnemyTexture) {
+                  float finalSpeed = 0.0f;
+                  if (m_gameSettings.gameDifficulty == GameDifficulty::Easy) {
+                    finalSpeed = 900.0f;
+                    m_enemySpawnTimer = 0.7f;
+                  } else if (m_gameSettings.gameDifficulty ==
+                             GameDifficulty::Normal) {
+                    finalSpeed = 900.0f;
+                    m_enemySpawnTimer = 0.45f;
+                  } else {
+                    finalSpeed = 950.0f;
+                    m_enemySpawnTimer = 0.3f;
+                  }
+
+                  float enemyScale = 0.2f;
+                  float texWidth = currentEnemyTexture->getSize().x;
+                  float halfWidth = (texWidth * enemyScale) / 2.0f;
+                  float minX = m_machineLeftWall + halfWidth;
+                  float maxX = currentW - m_machineRightWall - halfWidth;
+                  float spawnX =
+                      minX + (std::rand() % static_cast<int>(maxX - minX));
+                  float spawnY = -300.0f;
+
+                  Enemy tempEnemy(*currentEnemyTexture, 0, 0);
+                  tempEnemy.spawn(spawnX, spawnY, finalSpeed,
+                                  *currentEnemyTexture, currentType,
+                                  m_player.getPosition());
+                  m_enemies.push_back(tempEnemy);
+                }
+
+              } else if (phase < 600.0f) {
+                //! PHASE 2 (5-10 min): ONLY Bars
+                Type currentType;
+                const sf::Texture *currentEnemyTexture = nullptr;
+                if (std::rand() % 2 == 0) {
+                  currentType = Type::Bar;
+                  currentEnemyTexture = &m_enemyBarTexture;
+                } else {
+                  currentType = Type::Bar2;
+                  currentEnemyTexture = &m_enemyBar2Texture;
+                }
+
+                float finalSpeed = 0.0f;
+                if (m_gameSettings.gameDifficulty == GameDifficulty::Easy) {
+                  finalSpeed = -500.0f;
+                  m_enemySpawnTimer = 0.8f;
+                } else if (m_gameSettings.gameDifficulty ==
+                           GameDifficulty::Normal) {
+                  finalSpeed = -700.0f;
+                  m_enemySpawnTimer = 0.55f;
+                } else {
+                  finalSpeed = -800.0f;
+                  m_enemySpawnTimer = 0.35f;
+                }
+
+                float enemyScale = 0.2f;
+                float texWidth = currentEnemyTexture->getSize().x;
+                float halfWidth = (texWidth * enemyScale) / 2.0f;
+                float minX = m_machineLeftWall + halfWidth;
+                float maxX = currentW - m_machineRightWall - halfWidth;
+                float spawnX =
+                    minX + (std::rand() % static_cast<int>(maxX - minX));
+                float spawnY = currentH + 100.0f;
+
+                Enemy tempEnemy(*currentEnemyTexture, 0, 0);
+                tempEnemy.spawn(spawnX, spawnY, finalSpeed,
+                                *currentEnemyTexture, currentType,
+                                m_player.getPosition());
+                m_enemies.push_back(tempEnemy);
+
+              } else if (phase < 900.0f) {
+                //! PHASE 3 (10-15 min): ONLY Boxes
                 Type currentType = Type::Box;
                 const sf::Texture *currentEnemyTexture = &m_enemyBoxTexture;
                 float finalSpeed = 350.0f;
@@ -1385,58 +1480,85 @@ void Game::run() {
                                    : (currentW - m_machineRightWall - 105.0f);
                 float spawnY = -150.0f;
 
+                if (m_gameSettings.gameDifficulty == GameDifficulty::Easy)
+                  m_enemySpawnTimer = 2.5f;
+                else if (m_gameSettings.gameDifficulty ==
+                         GameDifficulty::Normal)
+                  m_enemySpawnTimer = 1.8f;
+                else
+                  m_enemySpawnTimer = 1.2f;
+
+                Enemy tempEnemy(*currentEnemyTexture, 0, 0);
                 tempEnemy.spawn(spawnX, spawnY, finalSpeed,
                                 *currentEnemyTexture, currentType,
                                 m_player.getPosition(), &m_enemyCookieTexture);
                 m_enemies.push_back(tempEnemy);
+
               } else {
+                //! PHASE 4 (15-20 min): MIX — 50% Cans, 30% Bars, 20% Boxes
+                int roll = std::rand() % 100;
                 Type currentType;
                 const sf::Texture *currentEnemyTexture = nullptr;
 
-                if (std::rand() % 100 <= 35) {
-                  currentType = Type::Bar;
-                  if (std::rand() % 100 <= 49)
-                    currentEnemyTexture = &m_enemyBarTexture;
-                  else {
-                    currentEnemyTexture = &m_enemyBar2Texture;
-                    currentType = Type::Bar2;
-                  }
-                } else {
+                if (roll < 50) {
+                  //? Cans (most common, баночки)
                   currentType = Type::Can;
                   if (!m_enemyCanTextures.empty())
                     currentEnemyTexture =
                         &m_enemyCanTextures[std::rand() %
                                             m_enemyCanTextures.size()];
-                }
 
-                if (currentEnemyTexture) {
+                  if (currentEnemyTexture) {
+                    float finalSpeed = 0.0f;
+                    if (m_gameSettings.gameDifficulty == GameDifficulty::Easy) {
+                      finalSpeed = 900.0f;
+                      m_enemySpawnTimer = 0.5f;
+                    } else if (m_gameSettings.gameDifficulty ==
+                               GameDifficulty::Normal) {
+                      finalSpeed = 900.0f;
+                      m_enemySpawnTimer = 0.35f;
+                    } else {
+                      finalSpeed = 950.0f;
+                      m_enemySpawnTimer = 0.25f;
+                    }
+
+                    float enemyScale = 0.2f;
+                    float texWidth = currentEnemyTexture->getSize().x;
+                    float halfWidth = (texWidth * enemyScale) / 2.0f;
+                    float minX = m_machineLeftWall + halfWidth;
+                    float maxX = currentW - m_machineRightWall - halfWidth;
+                    float spawnX =
+                        minX + (std::rand() % static_cast<int>(maxX - minX));
+                    float spawnY = -300.0f;
+
+                    Enemy tempEnemy(*currentEnemyTexture, 0, 0);
+                    tempEnemy.spawn(spawnX, spawnY, finalSpeed,
+                                    *currentEnemyTexture, currentType,
+                                    m_player.getPosition());
+                    m_enemies.push_back(tempEnemy);
+                  }
+
+                } else if (roll < 80) {
+                  //? Bars (medium)
+                  if (std::rand() % 2 == 0) {
+                    currentType = Type::Bar;
+                    currentEnemyTexture = &m_enemyBarTexture;
+                  } else {
+                    currentType = Type::Bar2;
+                    currentEnemyTexture = &m_enemyBar2Texture;
+                  }
                   float finalSpeed = 0.0f;
-
                   if (m_gameSettings.gameDifficulty == GameDifficulty::Easy) {
-                    finalSpeed =
-                        (currentType == Type::Bar || currentType == Type::Bar2)
-                            ? -500.0f
-                            : 900.0f;
+                    finalSpeed = -500.0f;
                     m_enemySpawnTimer = 0.5f;
                   } else if (m_gameSettings.gameDifficulty ==
                              GameDifficulty::Normal) {
-                    finalSpeed =
-                        (currentType == Type::Bar || currentType == Type::Bar2)
-                            ? -700.0f
-                            : 900.0f;
-                    m_enemySpawnTimer = 0.3f;
+                    finalSpeed = -700.0f;
+                    m_enemySpawnTimer = 0.35f;
                   } else {
-                    finalSpeed =
-                        (currentType == Type::Bar || currentType == Type::Bar2)
-                            ? -800.0f
-                            : 950.0f;
-                    m_enemySpawnTimer = 0.2f;
+                    finalSpeed = -800.0f;
+                    m_enemySpawnTimer = 0.25f;
                   }
-
-                  float spawnY =
-                      (currentType == Type::Bar || currentType == Type::Bar2)
-                          ? currentH + 100.0f
-                          : -300.0f;
 
                   float enemyScale = 0.2f;
                   float texWidth = currentEnemyTexture->getSize().x;
@@ -1445,10 +1567,41 @@ void Game::run() {
                   float maxX = currentW - m_machineRightWall - halfWidth;
                   float spawnX =
                       minX + (std::rand() % static_cast<int>(maxX - minX));
+                  float spawnY = currentH + 100.0f;
 
+                  Enemy tempEnemy(*currentEnemyTexture, 0, 0);
                   tempEnemy.spawn(spawnX, spawnY, finalSpeed,
                                   *currentEnemyTexture, currentType,
                                   m_player.getPosition());
+                  m_enemies.push_back(tempEnemy);
+
+                } else {
+                  //? Boxes (least common, орео/коробки)
+                  currentType = Type::Box;
+                  currentEnemyTexture = &m_enemyBoxTexture;
+
+                  float finalSpeed = 350.0f;
+                  static bool lastSpawnLeft = false;
+                  bool spawnLeft = !lastSpawnLeft;
+                  lastSpawnLeft = spawnLeft;
+                  float spawnX = spawnLeft
+                                     ? (m_machineLeftWall + 130.0f)
+                                     : (currentW - m_machineRightWall - 105.0f);
+                  float spawnY = -150.0f;
+
+                  if (m_gameSettings.gameDifficulty == GameDifficulty::Easy)
+                    m_enemySpawnTimer = 0.5f;
+                  else if (m_gameSettings.gameDifficulty ==
+                           GameDifficulty::Normal)
+                    m_enemySpawnTimer = 0.35f;
+                  else
+                    m_enemySpawnTimer = 0.25f;
+
+                  Enemy tempEnemy(*currentEnemyTexture, 0, 0);
+                  tempEnemy.spawn(spawnX, spawnY, finalSpeed,
+                                  *currentEnemyTexture, currentType,
+                                  m_player.getPosition(),
+                                  &m_enemyCookieTexture);
                   m_enemies.push_back(tempEnemy);
                 }
               }
@@ -1456,33 +1609,53 @@ void Game::run() {
               Type currentType;
               const sf::Texture *currentEnemyTexture = nullptr;
               float finalSpeed = 0.0f;
+              float phase = m_currentEpisodeTime;
+              
+              bool spawnSlow = false;
+              if (phase < 300.0f) {
+                //? Phase 1 (0-5 min): ONLY Slow hands
+                spawnSlow = true;
+              } else if (phase < 600.0f) {
+                //? Phase 2 (5-10 min): ONLY Fast hands
+                spawnSlow = false;
+              } else if (phase < 900.0f) {
+                //? Phase 3 (10-15 min): 65% Slow, 35% Fast
+                spawnSlow = (std::rand() % 100 < 65);
+              } else {
+                //? Phase 4 (15-20 min): 35% Slow, 65% Fast
+                spawnSlow = (std::rand() % 100 < 35);
+              }
 
-              if (std::rand() % 2 == 0) {
+              if (!spawnSlow) {
+                //? Fast hands (HandStraight)
                 currentType = Type::HandStraight;
                 currentEnemyTexture = &m_enemyHand1Texture;
                 finalSpeed = 800.0f;
               } else {
+                //? Slow hands (HandChaser)
                 currentType = Type::HandChaser;
                 currentEnemyTexture = &m_enemyHand2Texture;
                 if (m_gameSettings.gameDifficulty == GameDifficulty::Easy) {
                   finalSpeed = 100.0f;
-                }
-                if (m_gameSettings.gameDifficulty == GameDifficulty::Normal) {
+                } else if (m_gameSettings.gameDifficulty == GameDifficulty::Normal) {
                   finalSpeed = 150.0f;
-                }
-                if (m_gameSettings.gameDifficulty == GameDifficulty::Hard) {
+                } else if (m_gameSettings.gameDifficulty == GameDifficulty::Hard) {
                   finalSpeed = 200.0f;
                 }
               }
 
+              //? Base spawn timers
               if (m_gameSettings.gameDifficulty == GameDifficulty::Easy) {
                 m_enemySpawnTimer = 1.0f;
-              }
-              if (m_gameSettings.gameDifficulty == GameDifficulty::Normal) {
+              } else if (m_gameSettings.gameDifficulty == GameDifficulty::Normal) {
                 m_enemySpawnTimer = 0.75f;
-              }
-              if (m_gameSettings.gameDifficulty == GameDifficulty::Hard) {
+              } else if (m_gameSettings.gameDifficulty == GameDifficulty::Hard) {
                 m_enemySpawnTimer = 0.5f;
+              }
+
+              //? Increase spawn frequency during Phase 1 by making timer shorter
+              if (phase < 300.0f) {
+                m_enemySpawnTimer *= 0.75f; //? 25% faster spawns
               }
 
               //* SPAWN SIDE
@@ -1513,6 +1686,7 @@ void Game::run() {
               }
 
               if (currentEnemyTexture) {
+                Enemy tempEnemy(*currentEnemyTexture, 0, 0);
                 tempEnemy.spawn(spawnX, spawnY, finalSpeed,
                                 *currentEnemyTexture, currentType,
                                 m_player.getPosition());
@@ -1533,7 +1707,9 @@ void Game::run() {
 
           for (auto it = m_enemies.begin(); it != m_enemies.end();) {
             if (it->getPosition().y > currentH + 200.0f ||
-                it->getPosition().y < -400.0f) {
+                it->getPosition().y < -400.0f ||
+                it->getPosition().x > currentW + 400.0f ||
+                it->getPosition().x < -400.0f) {
               it = m_enemies.erase(it);
             } else {
               ++it;
@@ -1714,6 +1890,9 @@ void Game::run() {
 
     case GameState::StoryScreen: {
       if (!m_typewriterDone) {
+        //? Start typewriter sound if not playing
+        if (m_typewriterSound.getStatus() != sf::Sound::Status::Playing)
+          m_typewriterSound.play();
         m_typewriterTimer += dt.asSeconds();
         while (m_typewriterTimer >= m_typewriterSpeed &&
                m_typewriterIndex < m_storyTextFull.getSize()) {
@@ -1723,6 +1902,7 @@ void Game::run() {
         }
         if (m_typewriterIndex >= m_storyTextFull.getSize()) {
           m_typewriterDone = true;
+          m_typewriterSound.stop();
         }
       }
       break;
@@ -2131,7 +2311,8 @@ void Game::setupEpisode(GameEpisode episode) {
     m_currentTopWall = m_machineTopWall;
     m_WallPushBack = 15.0f;
     m_currentEpisodeTime = 0.0f;
-    m_episodeDuration = 55.0f;
+    m_episodeDuration = 1200.0f; //? 20 minutes (4 phases x 5 min)
+    m_bgStopped = false;
 
     if (!m_bgTexture.loadFromFile("assets/images/episode_1.jpg"))
       std::cerr << "Error bg" << std::endl;
@@ -2145,7 +2326,7 @@ void Game::setupEpisode(GameEpisode episode) {
     m_currentRightWall = 0.0f;
     m_currentTopWall = 0.0f;
     m_WallPushBack = 0.0f;
-    m_episodeDuration = 120.0f;
+    m_episodeDuration = 1200.0f; //? 20 minutes (4 phases x 5 min)
     m_slowZone.size.x = m_currentWindowSize.x;
     m_slowZone.size.y = m_currentWindowSize.y;
     m_slowSafeZone.size.x = m_currentWindowSize.x / 1.7;

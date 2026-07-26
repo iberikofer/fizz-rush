@@ -94,6 +94,12 @@ void Menu::updatePulse(float dtSeconds) {
   m_lastDt = dtSeconds;
 }
 
+bool Menu::consumeHoverSoundFlag() {
+  bool ret = m_wantsToPlayHoverSound;
+  m_wantsToPlayHoverSound = false;
+  return ret;
+}
+
 //? How many focusable buttons each screen has (ordered by visual position)
 int Menu::buttonCount(GameState state) const {
   if (state == GameState::MainMenu || state == GameState::Paused)
@@ -261,13 +267,18 @@ void Menu::applyFocusOutline(sf::RectangleShape &btn, bool active,
   float pressSpeed = 20.0f;
 
   if (active) {
+    bool wasLessThanOne = (hoverFactor < 1.0f);
     if (hoverFactor == 0.0f) {
       pulseTimer = 0.0f;
     }
     pulseTimer += m_lastDt;
     hoverFactor += m_lastDt * hoverSpeed;
-    if (hoverFactor > 1.0f)
+    if (hoverFactor >= 1.0f) {
       hoverFactor = 1.0f;
+      if (wasLessThanOne) {
+        m_wantsToPlayHoverSound = true;
+      }
+    }
   } else {
     hoverFactor -= m_lastDt * hoverSpeed;
     if (hoverFactor < 0.0f)

@@ -39,6 +39,7 @@ public:
 	const sf::Font& getFont() const { return m_menuFont; }
 	const sf::Font& getFontUA() const { return m_menuFontUA; }
 	void updatePulse(float dtSeconds);
+	bool consumeHoverSoundFlag();
 
 	void draw(sf::RenderWindow &window, GameState m_gameState);
 
@@ -107,4 +108,5 @@ private:
 
 	bool m_isDifficultyLocked;
 	uint8_t m_globalAlpha = 255;
+	bool m_wantsToPlayHoverSound = false;
 };

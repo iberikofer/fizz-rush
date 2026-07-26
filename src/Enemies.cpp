@@ -15,20 +15,13 @@ Vector2f normalizeVector(Vector2f source) {
     return source;
 }
 
-Enemy::Enemy(float enemyStartX, float enemyStartY)
-    : m_enemySprite(m_enemyTexture), m_type(Type::Can) {
+Enemy::Enemy(const sf::Texture &texture, float enemyStartX, float enemyStartY)
+    : m_enemySprite(texture), m_type(Type::Can) {
   m_enemySprite.setPosition({enemyStartX, enemyStartY});
   m_enemySprite.setScale({0.053f, 0.053f});
   m_enemySpeed = 1000.0f;
 }
 
-//* === ASSETS LOADING ===
-void Enemy::loadAssets() {
-  if (!m_enemyTexture.loadFromFile("assets/images/enemy_can1.png"))
-    cerr << "Enemy sprite error!" << endl;
-  else
-    m_enemySprite.setTexture(m_enemyTexture, true);
-}
 
 //* === INITIAL SETUP ===
 void Enemy::spawn(float m_startPosX, float m_startPosY,
