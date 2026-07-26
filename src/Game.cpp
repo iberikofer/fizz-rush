@@ -110,6 +110,7 @@ Game::Game()
   m_gameSettings.loadFromFile("settings.ini");
   m_gameWindow.create(sf::VideoMode::getDesktopMode(), "Fizz Rush!",
                       sf::Style::None, sf::State::Fullscreen);
+  m_gameWindow.setKeyRepeatEnabled(false);
   m_gameWindow.requestFocus();
   m_gameWindow.clear(sf::Color::Black);
   m_gameWindow.display();
@@ -371,7 +372,7 @@ void Game::run() {
         if (m_menu.updateMouseHover(worldPos.x, worldPos.y,
                                     m_currentGameState)) {
           if (m_currentGameState != GameState::Controls)
-            m_menuSwitchSoundTimer = 0.08f;
+            m_menuSwitchSoundTimer = 0.15f;
         }
 
       } else if (const auto *mouseClick =
@@ -428,7 +429,7 @@ void Game::run() {
                              m_currentGameState == GameState::Controls ||
                              m_currentGameState == GameState::GameOver);
 
-        if (isMenuScreen) {
+        if (isMenuScreen && m_pendingMenuAction == -1) {
           bool focusChanged = false;
           if (keyPressed->code == sf::Keyboard::Key::Up ||
               keyPressed->code == sf::Keyboard::Key::W)
@@ -448,7 +449,7 @@ void Game::run() {
               focusChanged = m_menu.moveFocus2D(1, 0, m_currentGameState);
           }
           if (focusChanged && m_currentGameState != GameState::Controls) {
-            m_menuSwitchSoundTimer = 0.08f;
+            m_menuSwitchSoundTimer = 0.15f;
           }
         }
 
@@ -569,11 +570,13 @@ void Game::run() {
           if (m_isFullscreen) {
             m_gameWindow.create(sf::VideoMode::getDesktopMode(),
                                 m_gameWindowName, sf::Style::Default);
+            m_gameWindow.setKeyRepeatEnabled(false);
             m_gameWindow.setPosition({0, 0});
             m_currentWindowSize = m_gameWindow.getSize();
           } else {
             m_gameWindow.create(sf::VideoMode::getDesktopMode(),
                                 m_gameWindowName, sf::State::Fullscreen);
+            m_gameWindow.setKeyRepeatEnabled(false);
           }
           m_currentWindowSize = m_gameWindow.getSize();
           if (m_gameSettings.VSync == true) {
@@ -771,7 +774,7 @@ void Game::run() {
 
       m_stickNavTimer += dt.asSeconds();
       float navRepeatDelay = 0.2f;
-      if (anyNav && m_stickNavTimer >= navRepeatDelay) {
+      if (anyNav && m_stickNavTimer >= navRepeatDelay && m_pendingMenuAction == -1) {
         m_stickNavTimer = 0.f;
         bool focusChanged = false;
         if (navUp)
@@ -788,7 +791,7 @@ void Game::run() {
             focusChanged = m_menu.moveFocus2D(1, 0, m_currentGameState);
         }
         if (focusChanged && m_currentGameState != GameState::Controls) {
-          m_menuSwitchSoundTimer = 0.08f;
+          m_menuSwitchSoundTimer = 0.15f;
         }
       }
       if (!anyNav)
@@ -2226,12 +2229,10 @@ void Game::startTransition(GameEpisode nextEpisode) {
   m_cutsceneCooldown = 0.0f;
 
   if (m_blackScreenDelay <= 0.0f) {
-    if (m_transitionSound.getStatus() != sf::Sound::Status::Playing)
-      m_transitionSound.play();
   }
 
   bool ua = m_gameSettings.ukrainianLanguage;
-  m_loadingText.setFont(ua ? m_loadingFontUA : m_loadingFont);
+  m_loadingText.setFont(m_menu.getFont());
 
   if (m_nextEpisode == GameEpisode::VendingMachine) {
     if (ua)
@@ -2246,7 +2247,6 @@ void Game::startTransition(GameEpisode nextEpisode) {
                               U"\u0421\u043f\u0440\u0430\u0433\u0430");
     else
       m_loadingText.setString(U"Episode 2 \u2013 Thirst");
-    m_transitionSound.play();
   } else if (m_nextEpisode == GameEpisode::BossFight) {
     if (ua)
       m_loadingText.setString(
@@ -2254,7 +2254,6 @@ void Game::startTransition(GameEpisode nextEpisode) {
           U"\u041f\u0420\u0418\u0411\u0418\u0420\u0410\u041d\u041d\u042f!");
     else
       m_loadingText.setString(U"Episode 3 \u2013 CLEANING!");
-    m_transitionSound.play();
   } else if (m_nextEpisode == GameEpisode::Victory) {
     if (!m_bgTexture.loadFromFile("assets/images/Victory_bg.jpg"))
       std::cerr << "Victory BG error" << std::endl;
@@ -2267,7 +2266,7 @@ void Game::startTransition(GameEpisode nextEpisode) {
     m_bgSprite.setScale({scaleX, scaleY});
 
     m_loadingText.setCharacterSize(200);
-    m_loadingText.setFont(ua ? m_loadingFontUA : m_loadingFont);
+    m_loadingText.setFont(m_menu.getFont());
     std::string str;
     if (m_inputMode == InputMode::Gamepad) {
       str = ua ? "Ви вижили!\nДалі буде...\n\n(Буде зіграно катсцену 4)\n[ "
@@ -2399,11 +2398,11 @@ void Game::handleMenuAction(int actionId, float currentW, float currentH) {
                             m_currentWindowSize.y, m_gameSettings,
                             m_lastGameState);
   } else if (actionId == 2) {
-    m_lastGameState = m_currentGameState;
+    m_stateBeforeSettings = m_currentGameState;
     m_currentGameState = GameState::Settings;
     m_menu.resetFocus(GameState::Settings);
     m_menu.setupMenuButtons(m_currentGameState, currentW, currentH,
-                            m_gameSettings, m_lastGameState);
+                            m_gameSettings, m_stateBeforeSettings);
   } else if (actionId == 3) {
     if (m_gameSettings.gameDifficulty == GameDifficulty::Easy)
       m_gameSettings.gameDifficulty = GameDifficulty::Normal;
@@ -2412,13 +2411,13 @@ void Game::handleMenuAction(int actionId, float currentW, float currentH) {
     else
       m_gameSettings.gameDifficulty = GameDifficulty::Easy;
     m_menu.setupMenuButtons(m_currentGameState, currentW, currentH,
-                            m_gameSettings, m_lastGameState);
+                            m_gameSettings, m_stateBeforeSettings);
   } else if (actionId == 4) {
     m_gameSettings.playMusic = !m_gameSettings.playMusic;
     if (m_gameSettings.playMusic) {
       if (m_currentGameState == GameState::MainMenu ||
           (m_currentGameState == GameState::Settings &&
-           m_lastGameState == GameState::MainMenu)) {
+           m_stateBeforeSettings == GameState::MainMenu)) {
         m_menu.updateMusicVolume(true);
         m_Episode1Music.setVolume(0);
         m_Episode2Music.setVolume(0);
@@ -2432,7 +2431,7 @@ void Game::handleMenuAction(int actionId, float currentW, float currentH) {
       m_menu.updateMusicVolume(false);
     }
     m_menu.setupMenuButtons(m_currentGameState, currentW, currentH,
-                            m_gameSettings, m_lastGameState);
+                            m_gameSettings, m_stateBeforeSettings);
   } else if (actionId == 5) {
     if (m_gameSettings.VSync) {
       m_gameWindow.setVerticalSyncEnabled(false);
@@ -2443,26 +2442,26 @@ void Game::handleMenuAction(int actionId, float currentW, float currentH) {
     }
     m_gameSettings.VSync = !m_gameSettings.VSync;
     m_menu.setupMenuButtons(m_currentGameState, currentW, currentH,
-                            m_gameSettings, m_lastGameState);
+                            m_gameSettings, m_stateBeforeSettings);
   } else if (actionId == 6) {
     m_gameSettings.showFps = !m_gameSettings.showFps;
     m_menu.setupMenuButtons(m_currentGameState, currentW, currentH,
-                            m_gameSettings, m_lastGameState);
+                            m_gameSettings, m_stateBeforeSettings);
   } else if (actionId == 7) {
     m_gameSettings.showHitbox = !m_gameSettings.showHitbox;
     m_menu.setupMenuButtons(m_currentGameState, currentW, currentH,
-                            m_gameSettings, m_lastGameState);
+                            m_gameSettings, m_stateBeforeSettings);
   } else if (actionId == 8) {
     if (m_currentGameState == GameState::Controls) {
       m_currentGameState = GameState::Settings;
       m_menu.resetFocus(GameState::Settings);
     } else {
-      m_currentGameState = m_lastGameState;
+      m_currentGameState = m_stateBeforeSettings;
       m_menu.resetFocus(m_currentGameState);
       m_menu.setFocusedButtonIndex(1);
     }
     m_menu.setupMenuButtons(m_currentGameState, currentW, currentH,
-                            m_gameSettings, m_lastGameState);
+                            m_gameSettings, m_stateBeforeSettings);
   } else if (actionId == 9) {
     if (!m_isFadingIn && !m_isFadingOut) {
       if (m_currentGameState == GameState::MainMenu) {
@@ -2481,19 +2480,19 @@ void Game::handleMenuAction(int actionId, float currentW, float currentH) {
   } else if (actionId == 10) {
     m_gameSettings.ukrainianLanguage = !m_gameSettings.ukrainianLanguage;
     m_menu.setupMenuButtons(m_currentGameState, currentW, currentH,
-                            m_gameSettings, m_lastGameState);
+                            m_gameSettings, m_stateBeforeSettings);
   } else if (actionId == 11) {
     m_currentGameState = GameState::Controls;
     m_menu.resetFocus(GameState::Controls);
     m_menu.setupMenuButtons(m_currentGameState, currentW, currentH,
-                            m_gameSettings, m_lastGameState);
+                            m_gameSettings, m_stateBeforeSettings);
   } else if (actionId == 12) {
     m_gameSettings.playSfx = !m_gameSettings.playSfx;
     updateSfxVolume(m_gameSettings.playSfx);
     m_player.updateSfxVolume(m_gameSettings.playSfx);
     m_boss.updateSfxVolume(m_gameSettings.playSfx);
     m_menu.setupMenuButtons(m_currentGameState, currentW, currentH,
-                            m_gameSettings, m_lastGameState);
+                            m_gameSettings, m_stateBeforeSettings);
   }
 }
 

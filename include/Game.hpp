@@ -38,6 +38,7 @@ private:
   GameSettings m_gameSettings;
   GameState m_currentGameState;
   GameState m_lastGameState;
+  GameState m_stateBeforeSettings;
   GameEpisode m_currentEpisode;
   void startNewGame(bool useTransition = true);
   void setupEpisode(GameEpisode episode);

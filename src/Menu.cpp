@@ -411,7 +411,7 @@ void Menu::setupMenuButtons(GameState m_gameState, float winWidth,
           U" \u041a\u043b\u0456\u043a \u043c\u0438\u0448\u0456 / Enter / "
           U"\u041a\u043d\u043e\u043f\u043a\u0430 A (PlayStation: X)\n"
           U"\u041d\u0430\u0437\u0430\u0434/\u041f\u0430\u0443\u0437\u0430: "
-          U"Esc / \u041a\u043d\u043e\u043f\u043a\u0430 B (PlayStation: O) / Start\n"
+          U"Esc / \u041a\u043d\u043e\u043f\u043a\u0430 B (PlayStation: O) / \u041a\u043d\u043e\u043f\u043a\u0430 Start\n"
           U"\u041f\u043e\u0432\u043d\u0438\u0439 "
           U"\u0435\u043a\u0440\u0430\u043d: F11\n\n"
           U"\u0423\u0441\u0456 \u0435\u043a\u0440\u0430\u043d\u0438 \u043c\u0435\u043d\u044e "
@@ -422,7 +422,7 @@ void Menu::setupMenuButtons(GameState m_gameState, float winWidth,
       content = U"Movement: WASD / Arrow Keys / Left Stick\n"
                 U"Menu Navigation: Mouse / Arrows / Left Stick / D-Pad\n"
                 U"Confirm/Select: Mouse Click / Enter / Button A (PlayStation: X)\n"
-                U"Back/Pause: Esc / Button B (PlayStation: O) / Start\n"
+                U"Back/Pause: Esc / Button B (PlayStation: O) / Button Start\n"
                 U"Fullscreen: F11\n\n"
                 U"All menu screens support Mouse, Keyboard and Gamepad navigation.";
     }
