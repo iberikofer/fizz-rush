@@ -999,14 +999,14 @@ void Game::run() {
               }
             } else if (m_nextEpisode == GameEpisode::Survival) {
               if (ua)
-                rawStoryText = "[Placeholder - Епізод 2]";
+                rawStoryText = "[Placeholder - 2]";
               else
-                rawStoryText = "[Placeholder - Episode 2]";
+                rawStoryText = "[Placeholder - 2]";
             } else if (m_nextEpisode == GameEpisode::BossFight) {
               if (ua)
-                rawStoryText = "[Placeholder - Епізод 3]";
+                rawStoryText = "[Placeholder -  3]";
               else
-                rawStoryText = "[Placeholder - Episode 3]";
+                rawStoryText = "[Placeholder - 3]";
             }
 
             m_storyTextFull =
@@ -1677,7 +1677,7 @@ void Game::run() {
               }
 
               //? Increase spawn frequency during Phase 1 by making timer
-              //shorter
+              // shorter
               if (phase < 300.0f) {
                 m_enemySpawnTimer *= 0.75f; //? 25% faster spawns
               }
@@ -1981,16 +1981,46 @@ void Game::run() {
 
           sf::String strWait;
           if (ua) {
-            strWait = U"\u041a\u0430\u0442\u0441\u0446\u0435\u043d\u0430 \u0432\u0456\u0434\u043a\u0440\u0438\u0432\u0430\u0454\u0442\u044c\u0441\u044f \u0443 \u0437\u043e\u0432\u043d\u0456\u0448\u043d\u044c\u043e\u043c\u0443 \u043f\u043b\u0435\u0454\u0440\u0456...\n(\u042f\u043a\u0449\u043e \u0432\u0456\u0434\u0435\u043e \u043d\u0435 \u0437\u0430\u043f\u0443\u0441\u0442\u0438\u043b\u043e\u0441\u044c, \u0432\u0438 \u043c\u043e\u0436\u0435\u0442\u0435 \u043f\u0435\u0440\u0435\u0433\u043b\u044f\u043d\u0443\u0442\u0438 \u0439\u043e\u0433\u043e \u0432 \u043f\u0430\u043f\u0446\u0456 assets/videos/Cutscene_" + sf::String(std::to_string(cutsceneNum)) + U".mp4)";
+            strWait =
+                U"\u041a\u0430\u0442\u0441\u0446\u0435\u043d\u0430 "
+                U"\u0432\u0456\u0434\u043a\u0440\u0438\u0432\u0430\u0454\u0442"
+                U"\u044c\u0441\u044f \u0443 "
+                U"\u0437\u043e\u0432\u043d\u0456\u0448\u043d\u044c\u043e\u043c"
+                U"\u0443 "
+                U"\u043f\u043b\u0435\u0454\u0440\u0456...\n("
+                U"\u042f\u043a\u0449\u043e \u0432\u0456\u0434\u0435\u043e "
+                U"\u043d\u0435 "
+                U"\u0437\u0430\u043f\u0443\u0441\u0442\u0438\u043b\u043e\u0441"
+                U"\u044c, \u0432\u0438 \u043c\u043e\u0436\u0435\u0442\u0435 "
+                U"\u043f\u0435\u0440\u0435\u0433\u043b\u044f\u043d\u0443\u0442"
+                U"\u0438 \u0439\u043e\u0433\u043e \u0432 "
+                U"\u043f\u0430\u043f\u0446\u0456 assets/videos/Cutscene_" +
+                sf::String(std::to_string(cutsceneNum)) + U".mp4)";
           } else {
-            strWait = sf::String("Cutscene is opening in an external player...\n(If video did not start, you can view it in assets/videos/Cutscene_") + sf::String(std::to_string(cutsceneNum)) + sf::String(".mp4)");
+            strWait = sf::String("Cutscene is opening in an external "
+                                 "player...\n(If video did not start, you can "
+                                 "view it in assets/videos/Cutscene_") +
+                      sf::String(std::to_string(cutsceneNum)) +
+                      sf::String(".mp4)");
           }
 
           sf::String strConfirm;
           if (m_inputMode == InputMode::Gamepad) {
-            strConfirm = ua ? U"\n\n[ \u041d\u0430\u0442\u0438\u0441\u043d\u0456\u0442\u044c \u043a\u043d\u043e\u043f\u043a\u0443 A (PlayStation: X), \u0449\u043e\u0431 \u043f\u0440\u043e\u0434\u043e\u0432\u0436\u0438\u0442\u0438 ]" : U"\n\n[ Press Button A (PlayStation: X) to continue ]";
+            strConfirm =
+                ua ? U"\n\n[ "
+                     U"\u041d\u0430\u0442\u0438\u0441\u043d\u0456\u0442\u044c "
+                     U"\u043a\u043d\u043e\u043f\u043a\u0443 A (PlayStation: "
+                     U"X), \u0449\u043e\u0431 "
+                     U"\u043f\u0440\u043e\u0434\u043e\u0432\u0436\u0438\u0442"
+                     U"\u0438 ]"
+                   : U"\n\n[ Press Button A (PlayStation: X) to continue ]";
           } else {
-            strConfirm = ua ? U"\n\n[ \u041d\u0430\u0442\u0438\u0441\u043d\u0456\u0442\u044c Enter, \u0449\u043e\u0431 \u043f\u0440\u043e\u0434\u043e\u0432\u0436\u0438\u0442\u0438 ]" : U"\n\n[ Press Enter to continue ]";
+            strConfirm = ua ? U"\n\n[ "
+                              U"\u041d\u0430\u0442\u0438\u0441\u043d\u0456"
+                              U"\u0442\u044c Enter, \u0449\u043e\u0431 "
+                              U"\u043f\u0440\u043e\u0434\u043e\u0432\u0436"
+                              U"\u0438\u0442\u0438 ]"
+                            : U"\n\n[ Press Enter to continue ]";
           }
           strWait += strConfirm;
 
@@ -2009,17 +2039,29 @@ void Game::run() {
 
           sf::String str;
           if (m_inputMode == InputMode::Gamepad) {
-            str = ua ? U"[\u0417\u0430\u0442\u0438\u0441\u043d\u0456\u0442\u044c \u043a\u043d\u043e\u043f\u043a\u0443 A (PlayStation: X), \u0449\u043e\u0431 \u043f\u0440\u043e\u043f\u0443\u0441\u0442\u0438\u0442\u0438 \u043a\u0430\u0442\u0441\u0446\u0435\u043d\u0443]"
-                     : U"[Hold Button A (PlayStation: X) to skip cutscene]";
+            str =
+                ua ? U"[\u0417\u0430\u0442\u0438\u0441\u043d\u0456\u0442\u044c "
+                     U"\u043a\u043d\u043e\u043f\u043a\u0443 A (PlayStation: "
+                     U"X), \u0449\u043e\u0431 "
+                     U"\u043f\u0440\u043e\u043f\u0443\u0441\u0442\u0438\u0442"
+                     U"\u0438 \u043a\u0430\u0442\u0441\u0446\u0435\u043d\u0443]"
+                   : U"[Hold Button A (PlayStation: X) to skip cutscene]";
           } else {
-            str = ua ? U"[\u0417\u0430\u0442\u0438\u0441\u043d\u0456\u0442\u044c Enter, \u0449\u043e\u0431 \u043f\u0440\u043e\u043f\u0443\u0441\u0442\u0438\u0442\u0438 \u043a\u0430\u0442\u0441\u0446\u0435\u043d\u0443]"
-                     : U"[Hold Enter to skip cutscene]";
+            str =
+                ua ? U"[\u0417\u0430\u0442\u0438\u0441\u043d\u0456\u0442\u044c "
+                     U"Enter, \u0449\u043e\u0431 "
+                     U"\u043f\u0440\u043e\u043f\u0443\u0441\u0442\u0438\u0442"
+                     U"\u0438 \u043a\u0430\u0442\u0441\u0446\u0435\u043d\u0443]"
+                   : U"[Hold Enter to skip cutscene]";
           }
 
           if (m_cutsceneSkipped ||
               (m_skipTextAnimating && m_skipTextAnimTimer >= 2.0f)) {
             str =
-                ua ? U"[\u041a\u0430\u0442\u0441\u0446\u0435\u043d\u0430 \u0431\u0443\u0434\u0435 \u043f\u0440\u043e\u043f\u0443\u0449\u0435\u043d\u0430]" : U"[Cutscene will be skipped]";
+                ua ? U"[\u041a\u0430\u0442\u0441\u0446\u0435\u043d\u0430 "
+                     U"\u0431\u0443\u0434\u0435 "
+                     U"\u043f\u0440\u043e\u043f\u0443\u0449\u0435\u043d\u0430]"
+                   : U"[Cutscene will be skipped]";
             skipText.setFillColor(sf::Color(255, 200, 100, 230));
           }
 
@@ -2467,11 +2509,32 @@ void Game::startTransition(GameEpisode nextEpisode) {
     m_loadingText.setFont(ua ? m_loadingFontUA : m_loadingFont);
     sf::String str;
     if (m_inputMode == InputMode::Gamepad) {
-      str = ua ? U"\u0412\u0438 \u0432\u0438\u0436\u0438\u043b\u0438!\n\u0414\u0430\u043b\u0456 \u0431\u0443\u0434\u0435...\n\n(\u0411\u0443\u0434\u0435 \u043f\u0440\u043e\u0433\u0440\u0430\u043d\u0430 \u043a\u0430\u0442\u0441\u0446\u0435\u043d\u0430 4)\n[ \u041d\u0430\u0442\u0438\u0441\u043d\u0456\u0442\u044c \u043a\u043d\u043e\u043f\u043a\u0443 A (PS: X), \u0449\u043e\u0431 \u043f\u0440\u043e\u0434\u043e\u0432\u0436\u0438\u0442\u0438 ]"
-               : U"You Survived!\nTo be continued...\n\n(Cutscene 4 will be played)\n[ Press Button A (PS: X) to proceed ]";
+      str =
+          ua ? U"\u0412\u0438 "
+               U"\u0432\u0438\u0436\u0438\u043b\u0438!"
+               U"\n\u0414\u0430\u043b\u0456 "
+               U"\u0431\u0443\u0434\u0435...\n\n(\u0411\u0443\u0434\u0435 "
+               U"\u043f\u0440\u043e\u0433\u0440\u0430\u043d\u0430 "
+               U"\u043a\u0430\u0442\u0441\u0446\u0435\u043d\u0430 4)\n[ "
+               U"\u041d\u0430\u0442\u0438\u0441\u043d\u0456\u0442\u044c "
+               U"\u043a\u043d\u043e\u043f\u043a\u0443 A (PS: X), "
+               U"\u0449\u043e\u0431 "
+               U"\u043f\u0440\u043e\u0434\u043e\u0432\u0436\u0438\u0442\u0438 ]"
+             : U"You Survived!\nTo be continued...\n\n(Cutscene 4 will be "
+               U"played)\n[ Press Button A (PS: X) to proceed ]";
     } else {
-      str = ua ? U"\u0412\u0438 \u0432\u0438\u0436\u0438\u043b\u0438!\n\u0414\u0430\u043b\u0456 \u0431\u0443\u0434\u0435...\n\n(\u0411\u0443\u0434\u0435 \u043f\u0440\u043e\u0433\u0440\u0430\u043d\u0430 \u043a\u0430\u0442\u0441\u0446\u0435\u043d\u0430 4)\n[ \u041d\u0430\u0442\u0438\u0441\u043d\u0456\u0442\u044c Enter, \u0449\u043e\u0431 \u043f\u0440\u043e\u0434\u043e\u0432\u0436\u0438\u0442\u0438 ]"
-               : U"You Survived!\nTo be continued...\n\n(Cutscene 4 will be played)\n[ Press Enter to proceed ]";
+      str =
+          ua ? U"\u0412\u0438 "
+               U"\u0432\u0438\u0436\u0438\u043b\u0438!"
+               U"\n\u0414\u0430\u043b\u0456 "
+               U"\u0431\u0443\u0434\u0435...\n\n(\u0411\u0443\u0434\u0435 "
+               U"\u043f\u0440\u043e\u0433\u0440\u0430\u043d\u0430 "
+               U"\u043a\u0430\u0442\u0441\u0446\u0435\u043d\u0430 4)\n[ "
+               U"\u041d\u0430\u0442\u0438\u0441\u043d\u0456\u0442\u044c Enter, "
+               U"\u0449\u043e\u0431 "
+               U"\u043f\u0440\u043e\u0434\u043e\u0432\u0436\u0438\u0442\u0438 ]"
+             : U"You Survived!\nTo be continued...\n\n(Cutscene 4 will be "
+               U"played)\n[ Press Enter to proceed ]";
     }
     m_loadingText.setString(str);
 
